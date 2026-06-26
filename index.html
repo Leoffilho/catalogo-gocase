@@ -7,6 +7,8 @@
   <meta name="description" content="Ferramenta interna Gocase para geração de catálogos de revenda em PDF." />
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -96,13 +98,13 @@
       </button>
 
       <!-- Exportar PDF -->
-      <button class="btn btn-pdf no-print" onclick="window.print()">
+      <button class="btn btn-pdf no-print" id="btn-pdf" onclick="generatePDF()">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/>
-          <rect x="6" y="14" width="12" height="8" rx="1"/>
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/>
+          <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+          <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
         </svg>
-        Exportar PDF
+        <span id="btn-pdf-label">Exportar PDF</span>
       </button>
     </div>
   </div>
@@ -163,7 +165,10 @@
   <!-- Banner -->
   <img id="catalog-banner" class="catalog-banner" src="" alt="Banner" style="display:none" />
 
-  <!-- Conditions -->
+  <!-- Products -->
+  <div class="products-section" id="products-section"></div>
+
+  <!-- Conditions (rodapé) -->
   <div class="conditions-section">
     <div class="conditions-title">Condições Comerciais</div>
     <div class="conditions-grid">
@@ -210,7 +215,7 @@
           </svg>
           <span></span>
         </a>
-        <a href="#" class="cta-btn-wa no-print" id="cta-wa-btn" target="_blank" rel="noreferrer">
+        <a href="#" class="cta-btn-wa" id="cta-wa-btn" target="_blank" rel="noreferrer">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>
           </svg>
@@ -219,9 +224,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Products -->
-  <div class="products-section" id="products-section"></div>
 </div>
 
 <!-- TOAST -->

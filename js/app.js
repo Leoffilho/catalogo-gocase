@@ -278,6 +278,72 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// ── GENERATE PDF ──
+export async function generatePDF() {
+  const catalog = document.getElementById('catalog');
+  if (!catalog || catalog.style.display === 'none') {
+    showToast('⚠ Importe produtos antes de gerar o PDF');
+    return;
+  }
+
+  const btn   = document.getElementById('btn-pdf');
+  const label = document.getElementById('btn-pdf-label');
+  btn.disabled = true;
+  label.textContent = 'Gerando…';
+
+  try {
+    const { jsPDF } = window.jspdf;
+
+    const canvas = await html2canvas(catalog, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    const imgData   = canvas.toDataURL('image/jpeg', 0.92);
+    const pageW     = 210;  // A4 mm
+    const pageH     = 297;
+    const imgW      = pageW;
+    const imgH      = (canvas.height * pageW) / canvas.width;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    let yOffset = 0;
+    let remaining = imgH;
+
+    while (remaining > 0) {
+      if (yOffset > 0) pdf.addPage();
+
+      // Clip the portion of the image for this page
+      const srcY      = (yOffset / imgH) * canvas.height;
+      const srcHeight = Math.min((pageH / imgH) * canvas.height, canvas.height - srcY);
+      const sliceH    = (srcHeight / canvas.height) * imgH;
+
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width  = canvas.width;
+      sliceCanvas.height = srcHeight;
+      sliceCanvas.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+
+      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, imgW, sliceH);
+
+      yOffset   += pageH;
+      remaining -= pageH;
+    }
+
+    const sellerSlug = state.seller.name.split(' ')[0].toLowerCase();
+    pdf.save(`catalogo-gocase-${sellerSlug}.pdf`);
+    showToast('✓ PDF gerado com sucesso');
+  } catch (err) {
+    console.error(err);
+    showToast('⚠ Erro ao gerar PDF. Tente novamente.');
+  } finally {
+    btn.disabled = false;
+    label.textContent = 'Exportar PDF';
+  }
+}
+
 // ── INIT ──
 buildSellerOptions();
 renderSellerInfo();
@@ -291,3 +357,4 @@ window.importFromPaste   = importFromPaste;
 window.clearProducts     = clearProducts;
 window.openEditSeller    = openEditSeller;
 window.saveEditSeller    = saveEditSeller;
+window.generatePDF       = generatePDF;
