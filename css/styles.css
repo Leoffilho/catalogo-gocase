@@ -419,3 +419,28 @@ select.styled-select {
   color: var(--neutral-500); font-size: 14px;
 }
 .generator-empty svg { width: 48px; height: 48px; margin: 0 auto 16px; display: block; opacity: 0.25; }
+
+/* ── COLOR DOTS (product card) ── */
+.color-dots-label {
+  font-size: 10px; color: var(--neutral-500); margin-top: 6px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.color-dots { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+.color-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.12);
+  flex-shrink: 0; position: relative; cursor: default;
+}
+.color-dot.color-dot-light { border-color: #bbb; }
+.color-dot::after {
+  content: attr(title);
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%) scale(0);
+  transform-origin: bottom center;
+  background: #1a1a1a; color: #fff;
+  font-size: 10px; padding: 2px 7px; border-radius: 4px;
+  white-space: nowrap; pointer-events: none;
+  transition: transform 0.12s;
+  z-index: 20;
+}
+.color-dot:hover::after { transform: translateX(-50%) scale(1); }

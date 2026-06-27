@@ -1,3 +1,79 @@
+// ── EBOOK STRIPPING (display only, data unchanged) ──
+export function stripEbook(str) {
+  return (str || '').replace(/\s*\+\s*ebook\b/gi, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+// ── FIXED PRICE TABLE (sorted longest-key-first to avoid partial shadowing) ──
+const PRICE_TABLE = [
+  { key: 'Garrafa Magsafe',   price: '172.67' },
+  { key: 'Garrafa Fresh 950', price: '106.60' },
+  { key: 'Garrafa Fresh 650', price: '99.33'  },
+  { key: 'Garrafa Pro',       price: '132.67' },
+  { key: 'Garrafa Mini',      price: '86.60'  },
+  { key: 'Garrafa Urban',     price: '72.67'  },
+  { key: 'Copo Life 1170',    price: '139.33' },
+  { key: 'Copo Life 880',     price: '126.00' },
+  { key: 'Copo Vibe',         price: '92.67'  },
+  { key: 'Tote Daily',        price: '146.00' },
+  { key: 'Tote Mini',         price: '146.00' },
+  { key: 'Tote Pop',          price: '132.67' },
+  { key: 'Mala Trip',         price: '332.59' },
+  { key: 'Mala Joy',          price: '159.33' },
+  { key: 'Mochila Pop',       price: '132.67' },
+  { key: 'Mochila Executiva', price: '179.33' },
+  { key: 'Mochila Voyage',    price: '259.33' },
+  { key: 'Mochila Fun',       price: '219.33' },
+  { key: 'Bolsa Moove',       price: '139.33' },
+  { key: 'Necessaire Trip',   price: '52.67'  },
+  { key: 'Lancheira Fruit',   price: '153.33' },
+  { key: 'Slim Air',          price: '22.22'  },
+  { key: 'Infinite Air',      price: '31.07'  },
+];
+
+export function getPriceByProduct(produto, fallback, fullName) {
+  const clean = stripEbook(produto || '').toLowerCase();
+  for (const entry of PRICE_TABLE) {
+    if (clean.includes(entry.key.toLowerCase())) return entry.price;
+  }
+  if (fullName) console.warn('[PREÇO NÃO MAPEADO]:', fullName);
+  return fallback || '';
+}
+
+// ── COLOR HANDLING ──
+export const COLOR_WORDS = [
+  'Preta','Preto','Rosa','Branca','Branco','Azul',
+  'Vermelha','Vermelho','Verde','Amarela','Amarelo',
+  'Dourada','Dourado','Cinza','Bege','Lilás','Roxa','Roxo',
+];
+
+export const COLOR_HEX_MAP = {
+  'Preta':'#1a1a1a','Preto':'#1a1a1a',
+  'Rosa':'#f48fb1',
+  'Branca':'#f5f5f0','Branco':'#f5f5f0',
+  'Azul':'#1565c0',
+  'Vermelha':'#c0392b','Vermelho':'#c0392b',
+  'Verde':'#2e7d32',
+  'Amarela':'#f9a825','Amarelo':'#f9a825',
+  'Dourada':'#c8a951','Dourado':'#c8a951',
+  'Cinza':'#9e9e9e',
+  'Bege':'#d7ccc8',
+  'Lilás':'#7b1fa2','Roxa':'#7b1fa2','Roxo':'#7b1fa2',
+  'Padrão':'#e0e0e0',
+};
+
+const _colorPattern = `[\\s-]+(${COLOR_WORDS.join('|')})$`;
+
+export function extractColor(str) {
+  const match = (str || '').trim().match(new RegExp(_colorPattern, 'i'));
+  if (!match) return null;
+  // Return the canonical casing from COLOR_WORDS
+  return COLOR_WORDS.find(c => c.toLowerCase() === match[1].toLowerCase()) || match[1];
+}
+
+export function stripColor(str) {
+  return (str || '').trim().replace(new RegExp(_colorPattern, 'i'), '').trim();
+}
+
 // Known Gocase collection names — used to infer "Capinha" when name has only 2 parts
 const KNOWN_COLLECTIONS = new Set([
   'Harry Potter', 'Friends', 'Warner', 'Disney', 'Marvel', 'Star Wars',

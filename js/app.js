@@ -1,6 +1,6 @@
 import { SELLERS } from './sellers.js';
 import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues } from './db.js';
-import { parseRow, learnCollections } from './parser.js';
+import { parseRow, learnCollections, stripEbook, getPriceByProduct, extractColor, stripColor, COLOR_HEX_MAP } from './parser.js';
 
 // ── STATE ──
 const state = {
@@ -223,20 +223,22 @@ export async function renderDBTable() {
       Nenhum produto encontrado.
     </div></td></tr>`;
   } else {
-    tbody.innerHTML = rows.map(p => `
+    tbody.innerHTML = rows.map(p => {
+      const displayPrice = getPriceByProduct(p.produto, p.price, null);
+      return `
       <tr>
         <td class="thumb">
           ${p.image
             ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-thumb>📦</div>'" />`
             : `<div class="no-thumb">📦</div>`}
         </td>
-        <td class="name-cell"><span class="truncate" title="${escHtml(p.name)}">${escHtml(p.name)}</span></td>
-        <td class="meta-cell">${escHtml(p.produto)}</td>
+        <td class="name-cell"><span class="truncate" title="${escHtml(p.name)}">${escHtml(stripEbook(p.name))}</span></td>
+        <td class="meta-cell">${escHtml(stripEbook(p.produto))}</td>
         <td class="meta-cell">${escHtml(p.colecao)}</td>
         <td class="meta-cell"><span class="truncate" title="${escHtml(p.estampa)}">${escHtml(p.estampa)}</span></td>
-        <td class="price-cell">${p.price ? 'R$ ' + escHtml(p.price) : '—'}</td>
-      </tr>
-    `).join('');
+        <td class="price-cell">${displayPrice ? 'R$ ' + escHtml(displayPrice) : '—'}</td>
+      </tr>`;
+    }).join('');
   }
 
   const start = (page - 1) * pageSize + 1;
@@ -322,7 +324,7 @@ function renderChips(containerId, values, selectedSet, onClick) {
   const container = document.getElementById(containerId);
   container.innerHTML = values.map(v => `
     <button class="filter-chip ${selectedSet.has(v) ? 'active' : ''}" data-value="${escHtml(v)}">
-      ${escHtml(v)}
+      ${escHtml(stripEbook(v))}
     </button>
   `).join('');
   container.querySelectorAll('.filter-chip').forEach(btn => {
@@ -389,6 +391,55 @@ export function gerarCatalogo() {
   catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// ── COLOR GROUPING ──
+function groupByColorVariants(prods) {
+  const map = new Map();
+  prods.forEach(p => {
+    const baseProduto = stripColor(p.produto || '');
+    const key = `${baseProduto}||${p.estampa || ''}`;
+    if (!map.has(key)) {
+      map.set(key, { representative: p, baseProduto, colors: [] });
+    }
+    const color = extractColor(p.produto || '');
+    map.get(key).colors.push({ name: color || 'Padrão', image: p.image });
+  });
+  return [...map.values()];
+}
+
+function renderProductCard(group) {
+  const p   = group.representative;
+  const price = getPriceByProduct(p.produto, p.price, p.name);
+  const displayName    = escHtml(stripEbook(p.estampa || p.name));
+  const displayProduto = escHtml(stripEbook(group.baseProduto));
+  const multiColor     = group.colors.length > 1;
+
+  const colorsHtml = multiColor ? `
+    <div class="color-dots-label">Cores disponíveis:</div>
+    <div class="color-dots">
+      ${group.colors.map(c => {
+        const hex     = COLOR_HEX_MAP[c.name] || '#ccc';
+        const isLight = c.name === 'Branca' || c.name === 'Branco' || c.name === 'Padrão';
+        return `<span class="color-dot${isLight ? ' color-dot-light' : ''}" style="background:${hex}" title="${escHtml(c.name)}"></span>`;
+      }).join('')}
+    </div>` : '';
+
+  return `
+    <div class="product-card">
+      <div class="product-img-wrap">
+        ${p.image
+          ? `<img src="${escHtml(p.image)}" alt="${displayName}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=no-img>📦</span>'" />`
+          : `<span class="no-img">📦</span>`}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${displayName}</div>
+        ${displayProduto && displayProduto !== 'Capinha'
+          ? `<div class="product-sku">${displayProduto}</div>` : ''}
+        ${price ? `<div class="product-price">R$ ${escHtml(price)}</div>` : ''}
+        ${colorsHtml}
+      </div>
+    </div>`;
+}
+
 // ── RENDER PRODUCTS ──
 function renderProducts(products) {
   const section = document.getElementById('products-section');
@@ -402,7 +453,6 @@ function renderProducts(products) {
 
   catalog.style.display = 'block';
 
-  // Group by colecao
   const groups = {};
   products.forEach(p => {
     const key = p.colecao || p.team || 'Geral';
@@ -410,30 +460,19 @@ function renderProducts(products) {
     groups[key].push(p);
   });
 
-  section.innerHTML = Object.entries(groups).map(([group, prods]) => `
-    <div class="products-team-group">
-      <div class="team-heading">
-        <span class="team-badge">${escHtml(group)}</span>
-        <span class="team-count">${prods.length} produto${prods.length !== 1 ? 's' : ''}</span>
-      </div>
-      <div class="products-grid">
-        ${prods.map(p => `
-          <div class="product-card">
-            <div class="product-img-wrap">
-              ${p.image
-                ? `<img src="${escHtml(p.image)}" alt="${escHtml(p.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=no-img>📦</span>'" />`
-                : `<span class="no-img">📦</span>`}
-            </div>
-            <div class="product-info">
-              <div class="product-name">${escHtml(p.estampa || p.name)}</div>
-              ${p.produto && p.produto !== 'Capinha' ? `<div class="product-sku">${escHtml(p.produto)}</div>` : ''}
-              ${p.price ? `<div class="product-price">R$ ${escHtml(p.price)}</div>` : ''}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+  section.innerHTML = Object.entries(groups).map(([colecao, prods]) => {
+    const variants = groupByColorVariants(prods);
+    return `
+      <div class="products-team-group">
+        <div class="team-heading">
+          <span class="team-badge">${escHtml(colecao)}</span>
+          <span class="team-count">${variants.length} produto${variants.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="products-grid">
+          ${variants.map(g => renderProductCard(g)).join('')}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ── GENERATE PDF ──
