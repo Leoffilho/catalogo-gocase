@@ -25,12 +25,12 @@ const CATEGORIA_MAP = {
   'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'mala', 'bag'],
 };
 
-// Retorna array de categorias — produto pode pertencer a mais de uma
+// Têxteis tem prioridade: bolsa/tote/mochila com "térmica" no nome = só Têxteis
 function getCategorias(produto) {
   const lower = (produto || '').toLowerCase();
-  return Object.entries(CATEGORIA_MAP)
-    .filter(([, keys]) => keys.some(k => lower.includes(k)))
-    .map(([cat]) => cat);
+  if (CATEGORIA_MAP['Têxteis'].some(k => lower.includes(k)))   return ['Têxteis'];
+  if (CATEGORIA_MAP['Térmicos'].some(k => lower.includes(k)))  return ['Térmicos'];
+  return [];
 }
 
 // ── FRANQUIA COLOR MAP ──
