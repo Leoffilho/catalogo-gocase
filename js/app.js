@@ -21,7 +21,7 @@ const state = {
 
 // ── CATEGORIA MAP ──
 const CATEGORIA_MAP = {
-  'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico', 'lancheira'],
+  'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico'],
   'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'mala', 'bag'],
 };
 
