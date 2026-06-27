@@ -340,6 +340,28 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- MODAL: Franquia da Planilha -->
+<div class="modal-overlay hidden" id="modal-franquia">
+  <div class="modal-box">
+    <div class="modal-title">Franquia / Segmento da Planilha</div>
+    <div class="modal-desc">
+      Arquivo: <strong id="modal-franquia-filename"></strong><br/>
+      A qual franquia ou segmento pertencem os produtos desta planilha?
+    </div>
+    <div class="modal-form">
+      <div class="form-field">
+        <label for="modal-franquia-input">Franquia / Segmento</label>
+        <input type="text" id="modal-franquia-input"
+          placeholder='ex: "Harry Potter", "Friends", "Flamengo", "Religiosos"...' />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="btn-franquia-skip">Pular (automático)</button>
+      <button class="btn btn-red" id="btn-franquia-import">Importar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Editar Vendedor -->
 <div class="modal-overlay hidden" id="modal-edit-seller">
   <div class="modal-box">

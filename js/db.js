@@ -110,6 +110,12 @@ export async function queryProducts({
     return true;
   });
 
+  filtered.sort((a, b) => {
+    const byProduto = (a.produto || '').localeCompare(b.produto || '', 'pt-BR');
+    if (byProduto !== 0) return byProduto;
+    return (a.estampa || '').localeCompare(b.estampa || '', 'pt-BR');
+  });
+
   const total = filtered.length;
   const start = (page - 1) * pageSize;
   const rows  = filtered.slice(start, start + pageSize);

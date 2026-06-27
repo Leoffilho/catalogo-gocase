@@ -143,6 +143,33 @@ export function changeBg(input) {
 }
 
 // ── IMPORT TO DB ──
+function askFranquia(filename) {
+  return new Promise(resolve => {
+    document.getElementById('modal-franquia-filename').textContent = filename;
+    document.getElementById('modal-franquia-input').value = '';
+    const modal    = document.getElementById('modal-franquia');
+    const btnImport = document.getElementById('btn-franquia-import');
+    const btnSkip   = document.getElementById('btn-franquia-skip');
+    modal.classList.remove('hidden');
+    setTimeout(() => document.getElementById('modal-franquia-input').focus(), 50);
+
+    function finish(val) {
+      modal.classList.add('hidden');
+      btnImport.removeEventListener('click', onImport);
+      btnSkip.removeEventListener('click', onSkip);
+      document.removeEventListener('keydown', onKey);
+      resolve(val || null);
+    }
+    function onImport() { finish(document.getElementById('modal-franquia-input').value.trim()); }
+    function onSkip()   { finish(null); }
+    function onKey(e)   { if (e.key === 'Enter') onImport(); else if (e.key === 'Escape') onSkip(); }
+
+    btnImport.addEventListener('click', onImport);
+    btnSkip.addEventListener('click', onSkip);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
 export async function importToDB(input) {
   const files = Array.from(input.files);
   if (!files.length) return;
@@ -150,6 +177,8 @@ export async function importToDB(input) {
   let totalAdded = 0, totalSkipped = 0;
 
   for (const file of files) {
+    const manualFranquia = await askFranquia(file.name);
+
     const data = await file.arrayBuffer();
     const wb   = XLSX.read(new Uint8Array(data), { type: 'array' });
     const parsed = [];
@@ -158,7 +187,10 @@ export async function importToDB(input) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
       rows.forEach(row => {
         const p = parseRow(row, file.name);
-        if (p) parsed.push(p);
+        if (p) {
+          if (manualFranquia) p.franquia = manualFranquia;
+          parsed.push(p);
+        }
       });
     }
 
@@ -254,12 +286,13 @@ export async function renderDBTable() {
   } else {
     tbody.innerHTML = rows.map(p => {
       const displayPrice = getPriceByProduct(p.produto, p.price, null);
+      const hasValidImg  = p.image && p.image.startsWith('http');
       return `
       <tr>
         <td class="thumb">
-          ${p.image
-            ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-thumb>📦</div>'" />`
-            : `<div class="no-thumb">📦</div>`}
+          ${hasValidImg
+            ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-thumb title=\\"Sem imagem — não aparecerá no catálogo\\">🚫</div>'" />`
+            : `<div class="no-thumb" title="Sem imagem — não aparecerá no catálogo">🚫</div>`}
         </td>
         <td class="name-cell"><span class="truncate" title="${escHtml(p.name)}">${escHtml(stripEbook(p.name))}</span></td>
         <td class="meta-cell">${escHtml(p.produto)}</td>
@@ -538,21 +571,39 @@ function renderProducts(products) {
     return;
   }
 
+  // Oculta produtos sem URL de imagem válida
+  const withImage = products.filter(p => p.image && p.image.startsWith('http'));
+
+  if (!withImage.length) {
+    section.innerHTML = '';
+    catalog.style.display = 'none';
+    return;
+  }
+
   catalog.style.display = 'block';
 
+  // Agrupa por tipo de produto (sem a cor)
   const groups = {};
-  products.forEach(p => {
-    const key = p.colecao || 'Geral';
+  withImage.forEach(p => {
+    const key = stripColor(stripEbook(p.produto || '')) || 'Outros';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
 
-  section.innerHTML = Object.entries(groups).map(([colecao, prods]) => {
+  // Grupos em ordem alfabética; dentro de cada grupo ordena por estampa
+  const sortedEntries = Object.entries(groups)
+    .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'))
+    .map(([tipo, prods]) => [
+      tipo,
+      prods.sort((a, b) => (a.estampa || a.name || '').localeCompare(b.estampa || b.name || '', 'pt-BR')),
+    ]);
+
+  section.innerHTML = sortedEntries.map(([tipo, prods]) => {
     const variants = groupByColorVariants(prods);
     return `
       <div class="products-team-group">
         <div class="team-heading">
-          <span class="team-badge">${escHtml(colecao)}</span>
+          <span class="team-badge">${escHtml(tipo.toUpperCase())}</span>
           <span class="team-count">${variants.length} produto${variants.length !== 1 ? 's' : ''}</span>
         </div>
         <div class="products-grid">
