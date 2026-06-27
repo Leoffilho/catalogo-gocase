@@ -294,7 +294,7 @@ export async function renderDBTable() {
       <tr>
         <td class="thumb">
           ${hasValidImg
-            ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='<div class=no-thumb title=\\"Sem imagem\\">📷</div>'" />`
+            ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div class=no-thumb>📷</div>'" />`
             : `<div class="no-thumb" title="Sem URL de imagem">📷</div>`}
         </td>
         <td class="name-cell"><span class="truncate" title="${escHtml(p.name)}">${escHtml(stripEbook(p.name))}</span></td>
@@ -468,14 +468,12 @@ function renderProductCard(p) {
   const price = getPriceByProduct(p.produto, p.price, p.name);
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
   const displayProduto = escHtml(stripEbook(p.produto || ''));
-  const noImgHtml = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#d4d4d4;font-size:32px">📷</div>`;
-
   return `
     <div class="product-card">
       <div class="product-img-wrap">
         ${p.image
-          ? `<img src="${escHtml(p.image)}" alt="${displayName}" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='${noImgHtml.replace(/'/g, "&#39;")}'" />`
-          : noImgHtml}
+          ? `<img src="${escHtml(p.image)}" alt="${displayName}" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<span class=\\'no-img\\'>📷</span>'" />`
+          : `<span class="no-img">📷</span>`}
       </div>
       <div class="product-info">
         <div class="product-name">${displayName}</div>
