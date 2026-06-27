@@ -10,13 +10,27 @@ const state = {
   dbPage: 1,
   dbPageSize: 50,
   // Generator filters
-  selectedFranquias: new Set(),
-  selectedTipos:     new Set(),
+  selectedCategorias: new Set(),
+  selectedFranquias:  new Set(),
+  selectedTipos:      new Set(),
   filterEstampa:  '',
   filterMaxPrice: Infinity,
   priceRangeMax:  500,
   filteredProducts: [],
 };
+
+// ── CATEGORIA MAP ──
+const CATEGORIA_MAP = {
+  'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico'],
+  'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'mala', 'bag'],
+};
+
+function getCategoria(produto) {
+  const lower = (produto || '').toLowerCase();
+  if (CATEGORIA_MAP['Térmicos'].some(k => lower.includes(k))) return 'Térmicos';
+  if (CATEGORIA_MAP['Têxteis'].some(k  => lower.includes(k))) return 'Têxteis';
+  return null;
+}
 
 // ── FRANQUIA COLOR MAP ──
 const FRANQUIA_COLORS = {
@@ -372,8 +386,27 @@ async function renderGeneratorFilters() {
     getDistinctValues('franquia'),
     getDistinctValues('produto'),
   ]);
+  renderCategoriaChips();
   renderFranquiaChips(franquias);
   renderTipoChips(tipos);
+}
+
+function renderCategoriaChips() {
+  const container = document.getElementById('chips-categoria');
+  const categorias = ['Térmicos', 'Têxteis'];
+  container.innerHTML = categorias.map(c => {
+    const isActive = state.selectedCategorias.has(c);
+    const color = c === 'Térmicos' ? '#0277bd' : '#558b2f';
+    return `<button class="filter-chip chip-franquia ${isActive ? 'active' : ''}"
+      data-value="${c}" style="--fc:${color}">${c}</button>`;
+  }).join('');
+  container.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggleSet(state.selectedCategorias, btn.dataset.value);
+      btn.classList.toggle('active', state.selectedCategorias.has(btn.dataset.value));
+      applyFiltersDebounced();
+    });
+  });
 }
 
 function renderFranquiaChips(franquias) {
@@ -421,6 +454,7 @@ export function onPriceRange(input) {
 }
 
 export function clearFilters() {
+  state.selectedCategorias.clear();
   state.selectedFranquias.clear();
   state.selectedTipos.clear();
   state.filterEstampa  = '';
@@ -448,6 +482,10 @@ export async function applyFilters() {
     produtos:  [...state.selectedTipos],
     maxPrice:  state.filterMaxPrice,
   });
+
+  if (state.selectedCategorias.size > 0) {
+    products = products.filter(p => state.selectedCategorias.has(getCategoria(p.produto)));
+  }
 
   state.filteredProducts = products;
   document.getElementById('filter-count-num').textContent = products.length.toLocaleString('pt-BR');
@@ -575,7 +613,10 @@ export async function generatePDF() {
     }
 
     const slug = state.seller.name.split(' ')[0].toLowerCase();
-    pdf.save(`catalogo-gocase-${slug}.pdf`);
+    const blob = pdf.output('blob');
+    const url  = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
     showToast('✓ PDF gerado com sucesso');
   } catch (err) {
     console.error(err);
