@@ -21,15 +21,16 @@ const state = {
 
 // ── CATEGORIA MAP ──
 const CATEGORIA_MAP = {
-  'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico'],
+  'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico', 'lancheira'],
   'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'mala', 'bag'],
 };
 
-function getCategoria(produto) {
+// Retorna array de categorias — produto pode pertencer a mais de uma
+function getCategorias(produto) {
   const lower = (produto || '').toLowerCase();
-  if (CATEGORIA_MAP['Térmicos'].some(k => lower.includes(k))) return 'Térmicos';
-  if (CATEGORIA_MAP['Têxteis'].some(k  => lower.includes(k))) return 'Têxteis';
-  return null;
+  return Object.entries(CATEGORIA_MAP)
+    .filter(([, keys]) => keys.some(k => lower.includes(k)))
+    .map(([cat]) => cat);
 }
 
 // ── FRANQUIA COLOR MAP ──
@@ -484,7 +485,9 @@ export async function applyFilters() {
   });
 
   if (state.selectedCategorias.size > 0) {
-    products = products.filter(p => state.selectedCategorias.has(getCategoria(p.produto)));
+    products = products.filter(p =>
+      getCategorias(p.produto).some(c => state.selectedCategorias.has(c))
+    );
   }
 
   state.filteredProducts = products;
