@@ -434,38 +434,4 @@ select.styled-select {
   border-color: var(--fc, #757575) !important;
 }
 
-/* ── COLOR FILTER DOTS (generator filter panel) ── */
-.filter-cor-dots { display: flex; flex-wrap: wrap; gap: 8px; }
-.filter-cor-dot {
-  width: 24px; height: 24px; border-radius: 50%;
-  border: 2px solid rgba(0,0,0,0.12);
-  cursor: pointer; flex-shrink: 0;
-  transition: transform 0.1s;
-}
-.filter-cor-dot.light { border-color: #bbb; }
-.filter-cor-dot:hover { transform: scale(1.2); }
-
-/* ── COLOR DOTS (product card) ── */
-.color-dots-label {
-  font-size: 10px; color: var(--neutral-500); margin-top: 6px;
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.color-dots { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
-.color-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  border: 1.5px solid rgba(0,0,0,0.12);
-  flex-shrink: 0; position: relative; cursor: default;
-}
-.color-dot.color-dot-light { border-color: #bbb; }
-.color-dot::after {
-  content: attr(title);
-  position: absolute; bottom: 18px; left: 50%;
-  transform: translateX(-50%) scale(0);
-  transform-origin: bottom center;
-  background: #1a1a1a; color: #fff;
-  font-size: 10px; padding: 2px 7px; border-radius: 4px;
-  white-space: nowrap; pointer-events: none;
-  transition: transform 0.12s;
-  z-index: 20;
-}
-.color-dot:hover::after { transform: translateX(-50%) scale(1); }
+/* ── COLOR DOTS (product card) — placeholder mantido, não usado no momento ── */

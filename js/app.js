@@ -1,6 +1,6 @@
 import { SELLERS } from './sellers.js';
 import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
-import { parseRow, learnCollections, stripEbook, getPriceByProduct, getFranquia, extractColor, stripColor, COLOR_HEX_MAP } from './parser.js';
+import { parseRow, learnCollections, stripEbook, getPriceByProduct, getFranquia } from './parser.js';
 
 // ── STATE ──
 const state = {
@@ -12,7 +12,6 @@ const state = {
   // Generator filters
   selectedFranquias: new Set(),
   selectedTipos:     new Set(),
-  selectedCores:     new Set(),
   filterEstampa:  '',
   filterMaxPrice: Infinity,
   priceRangeMax:  500,
@@ -174,10 +173,14 @@ export async function importToDB(input) {
   const files = Array.from(input.files);
   if (!files.length) return;
 
+  const label = files.length > 1
+    ? `${files.length} planilhas: ${files.map(f => f.name).join(', ')}`
+    : files[0].name;
+  const manualFranquia = await askFranquia(label);
+
   let totalAdded = 0, totalSkipped = 0;
 
   for (const file of files) {
-    const manualFranquia = await askFranquia(file.name);
 
     const data = await file.arrayBuffer();
     const wb   = XLSX.read(new Uint8Array(data), { type: 'array' });
@@ -291,8 +294,8 @@ export async function renderDBTable() {
       <tr>
         <td class="thumb">
           ${hasValidImg
-            ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-thumb title=\\"Sem imagem — não aparecerá no catálogo\\">🚫</div>'" />`
-            : `<div class="no-thumb" title="Sem imagem — não aparecerá no catálogo">🚫</div>`}
+            ? `<img src="${escHtml(p.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='<div class=no-thumb title=\\"Sem imagem\\">📷</div>'" />`
+            : `<div class="no-thumb" title="Sem URL de imagem">📷</div>`}
         </td>
         <td class="name-cell"><span class="truncate" title="${escHtml(p.name)}">${escHtml(stripEbook(p.name))}</span></td>
         <td class="meta-cell">${escHtml(p.produto)}</td>
@@ -371,7 +374,6 @@ async function renderGeneratorFilters() {
   ]);
   renderFranquiaChips(franquias);
   renderTipoChips(tipos);
-  await renderCorDots();
 }
 
 function renderFranquiaChips(franquias) {
@@ -406,46 +408,6 @@ function renderTipoChips(tipos) {
   });
 }
 
-async function renderCorDots() {
-  const all = await getAllProducts();
-  const colorCounts = new Map();
-  all.forEach(p => {
-    const color = extractColor(p.produto || '');
-    if (color) colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
-  });
-
-  const row       = document.getElementById('filter-row-cor');
-  const container = document.getElementById('filter-cores');
-
-  if (colorCounts.size === 0) {
-    row.style.display = 'none';
-    return;
-  }
-  row.style.display = '';
-
-  container.innerHTML = [...colorCounts.entries()].map(([color, count]) => {
-    const hex      = COLOR_HEX_MAP[color] || '#ccc';
-    const isLight  = color === 'Branca' || color === 'Branco' || color === 'Padrão';
-    const isActive = state.selectedCores.has(color);
-    const shadow   = isActive ? `box-shadow:0 0 0 2px white,0 0 0 4px ${hex}` : '';
-    return `<button class="filter-cor-dot ${isLight ? 'light' : ''}"
-      data-color="${escHtml(color)}"
-      style="background:${hex};${shadow}"
-      title="${escHtml(color)} (${count})"></button>`;
-  }).join('');
-
-  container.querySelectorAll('.filter-cor-dot').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const color = btn.dataset.color;
-      const hex   = COLOR_HEX_MAP[color] || '#ccc';
-      toggleSet(state.selectedCores, color);
-      const active = state.selectedCores.has(color);
-      btn.style.boxShadow = active ? `0 0 0 2px white, 0 0 0 4px ${hex}` : '';
-      applyFiltersDebounced();
-    });
-  });
-}
-
 function toggleSet(set, value) {
   if (set.has(value)) set.delete(value); else set.add(value);
 }
@@ -461,7 +423,6 @@ export function onPriceRange(input) {
 export function clearFilters() {
   state.selectedFranquias.clear();
   state.selectedTipos.clear();
-  state.selectedCores.clear();
   state.filterEstampa  = '';
   state.filterMaxPrice = Infinity;
   document.getElementById('filter-estampa').value = '';
@@ -488,14 +449,6 @@ export async function applyFilters() {
     maxPrice:  state.filterMaxPrice,
   });
 
-  // Color filter done in-memory (needs extractColor from parser)
-  if (state.selectedCores.size > 0) {
-    products = products.filter(p => {
-      const color = extractColor(p.produto || '');
-      return state.selectedCores.has(color || 'Padrão');
-    });
-  }
-
   state.filteredProducts = products;
   document.getElementById('filter-count-num').textContent = products.length.toLocaleString('pt-BR');
   renderProducts(products);
@@ -511,51 +464,24 @@ export function gerarCatalogo() {
   catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── COLOR GROUPING ──
-function groupByColorVariants(prods) {
-  const map = new Map();
-  prods.forEach(p => {
-    const baseProduto = stripColor(p.produto || '');
-    const key = `${baseProduto}||${p.estampa || ''}`;
-    if (!map.has(key)) {
-      map.set(key, { representative: p, baseProduto, colors: [] });
-    }
-    const color = extractColor(p.produto || '');
-    map.get(key).colors.push({ name: color || 'Padrão', image: p.image });
-  });
-  return [...map.values()];
-}
-
-function renderProductCard(group) {
-  const p          = group.representative;
-  const price      = getPriceByProduct(p.produto, p.price, p.name);
+function renderProductCard(p) {
+  const price = getPriceByProduct(p.produto, p.price, p.name);
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
-  const displayProduto = escHtml(stripColor(stripEbook(group.baseProduto)));
-  const multiColor     = group.colors.length > 1;
-
-  const colorsHtml = multiColor ? `
-    <div class="color-dots-label">Cores disponíveis:</div>
-    <div class="color-dots">
-      ${group.colors.map(c => {
-        const hex     = COLOR_HEX_MAP[c.name] || '#ccc';
-        const isLight = c.name === 'Branca' || c.name === 'Branco' || c.name === 'Padrão';
-        return `<span class="color-dot${isLight ? ' color-dot-light' : ''}" style="background:${hex}" title="${escHtml(c.name)}"></span>`;
-      }).join('')}
-    </div>` : '';
+  const displayProduto = escHtml(stripEbook(p.produto || ''));
+  const noImgHtml = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f5f5f5;color:#d4d4d4;font-size:32px">📷</div>`;
 
   return `
     <div class="product-card">
       <div class="product-img-wrap">
         ${p.image
-          ? `<img src="${escHtml(p.image)}" alt="${displayName}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=no-img>📦</span>'" />`
-          : `<span class="no-img">📦</span>`}
+          ? `<img src="${escHtml(p.image)}" alt="${displayName}" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='${noImgHtml.replace(/'/g, "&#39;")}'" />`
+          : noImgHtml}
       </div>
       <div class="product-info">
         <div class="product-name">${displayName}</div>
         ${displayProduto && displayProduto !== 'Capinha'
           ? `<div class="product-sku">${displayProduto}</div>` : ''}
         ${price ? `<div class="product-price">R$ ${formatBRL(price)}</div>` : ''}
-        ${colorsHtml}
       </div>
     </div>`;
 }
@@ -582,10 +508,10 @@ function renderProducts(products) {
 
   catalog.style.display = 'block';
 
-  // Agrupa por tipo de produto (sem a cor)
+  // Agrupa por tipo de produto
   const groups = {};
   withImage.forEach(p => {
-    const key = stripColor(stripEbook(p.produto || '')) || 'Outros';
+    const key = stripEbook(p.produto || '') || 'Outros';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
@@ -598,19 +524,16 @@ function renderProducts(products) {
       prods.sort((a, b) => (a.estampa || a.name || '').localeCompare(b.estampa || b.name || '', 'pt-BR')),
     ]);
 
-  section.innerHTML = sortedEntries.map(([tipo, prods]) => {
-    const variants = groupByColorVariants(prods);
-    return `
+  section.innerHTML = sortedEntries.map(([tipo, prods]) => `
       <div class="products-team-group">
         <div class="team-heading">
           <span class="team-badge">${escHtml(tipo.toUpperCase())}</span>
-          <span class="team-count">${variants.length} produto${variants.length !== 1 ? 's' : ''}</span>
+          <span class="team-count">${prods.length} produto${prods.length !== 1 ? 's' : ''}</span>
         </div>
         <div class="products-grid">
-          ${variants.map(g => renderProductCard(g)).join('')}
+          ${prods.map(p => renderProductCard(p)).join('')}
         </div>
-      </div>`;
-  }).join('');
+      </div>`).join('');
 }
 
 // ── GENERATE PDF ──

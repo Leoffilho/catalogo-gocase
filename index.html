@@ -195,11 +195,6 @@
           <input type="search" class="filter-text-input" id="filter-estampa"
             placeholder="Buscar estampa..." oninput="applyFiltersDebounced()" />
         </div>
-        <!-- Cor -->
-        <div class="filter-row" id="filter-row-cor" style="display:none">
-          <span class="filter-label">Cor</span>
-          <div class="filter-cor-dots" id="filter-cores"></div>
-        </div>
         <!-- Preço máximo -->
         <div class="filter-row">
           <span class="filter-label">Preço máx</span>
@@ -345,8 +340,8 @@
   <div class="modal-box">
     <div class="modal-title">Franquia / Segmento da Planilha</div>
     <div class="modal-desc">
-      Arquivo: <strong id="modal-franquia-filename"></strong><br/>
-      A qual franquia ou segmento pertencem os produtos desta planilha?
+      <strong id="modal-franquia-filename"></strong><br/>
+      A qual franquia ou segmento pertencem os produtos importados? Deixe em branco para detecção automática.
     </div>
     <div class="modal-form">
       <div class="form-field">
