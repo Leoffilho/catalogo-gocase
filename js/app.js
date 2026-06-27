@@ -1,6 +1,6 @@
 import { SELLERS } from './sellers.js';
-import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues } from './db.js';
-import { parseRow, learnCollections, stripEbook, getPriceByProduct, extractColor, stripColor, COLOR_HEX_MAP } from './parser.js';
+import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
+import { parseRow, learnCollections, stripEbook, getPriceByProduct, getFranquia, extractColor, stripColor, COLOR_HEX_MAP } from './parser.js';
 
 // ── STATE ──
 const state = {
@@ -10,12 +10,28 @@ const state = {
   dbPage: 1,
   dbPageSize: 50,
   // Generator filters
-  selectedProdutos: new Set(),
-  selectedColecoes: new Set(),
-  filterEstampa: '',
+  selectedFranquias: new Set(),
+  selectedTipos:     new Set(),
+  selectedCores:     new Set(),
+  filterEstampa:  '',
   filterMaxPrice: Infinity,
-  priceRangeMax: 500,
+  priceRangeMax:  500,
   filteredProducts: [],
+};
+
+// ── FRANQUIA COLOR MAP ──
+const FRANQUIA_COLORS = {
+  'Harry Potter':               '#7b1fa2',
+  'Friends':                    '#f57c00',
+  'Game of Thrones':            '#37474f',
+  'House of the Dragon':        '#b71c1c',
+  'Flamengo':                   '#b71c1c',
+  'Palmeiras':                  '#1b5e20',
+  'Corinthians':                '#212121',
+  'Grêmio':                     '#1565c0',
+  'As Meninas Super Poderosas': '#e91e63',
+  'Warner':                     '#c43b00',
+  'Outros':                     '#757575',
 };
 
 // ── TAB NAVIGATION ──
@@ -146,7 +162,6 @@ export async function importToDB(input) {
       });
     }
 
-    // Learn collections from this batch for future inference
     learnCollections(parsed.map(p => p.colecao).filter(Boolean));
 
     const { added, skipped } = await addProducts(parsed);
@@ -162,6 +177,20 @@ export async function importToDB(input) {
   input.value = '';
 }
 
+// ── DB MIGRATION ──
+async function migrateDB() {
+  await updateAllProducts(p => {
+    const needsFranquia    = p.franquia === undefined;
+    const needsEbookStrip  = p.produto && p.produto !== stripEbook(p.produto);
+    if (!needsFranquia && !needsEbookStrip) return null;
+    return {
+      ...p,
+      franquia: needsFranquia ? getFranquia(p.name) : p.franquia,
+      produto:  stripEbook(p.produto || 'Capinha'),
+    };
+  });
+}
+
 // ── DB SCREEN ──
 async function initDBScreen() {
   await refreshDBStats();
@@ -175,42 +204,42 @@ async function refreshDBStats() {
 }
 
 async function renderDBFilters() {
-  const [produtos, colecoes] = await Promise.all([
+  const [franquias, tipos] = await Promise.all([
+    getDistinctValues('franquia'),
     getDistinctValues('produto'),
-    getDistinctValues('colecao'),
   ]);
 
-  const selProduto = document.getElementById('db-filter-produto');
-  const selColecao = document.getElementById('db-filter-colecao');
-  const curP = selProduto.value;
-  const curC = selColecao.value;
+  const selFranquia = document.getElementById('db-filter-franquia');
+  const selTipo     = document.getElementById('db-filter-tipo');
+  const curF = selFranquia.value;
+  const curT = selTipo.value;
 
-  selProduto.innerHTML = '<option value="">Todos os produtos</option>';
-  produtos.forEach(v => {
+  selFranquia.innerHTML = '<option value="">Todas as franquias</option>';
+  franquias.forEach(v => {
     const o = document.createElement('option');
     o.value = v; o.textContent = v;
-    if (v === curP) o.selected = true;
-    selProduto.appendChild(o);
+    if (v === curF) o.selected = true;
+    selFranquia.appendChild(o);
   });
 
-  selColecao.innerHTML = '<option value="">Todas as coleções</option>';
-  colecoes.forEach(v => {
+  selTipo.innerHTML = '<option value="">Todos os tipos</option>';
+  tipos.forEach(v => {
     const o = document.createElement('option');
     o.value = v; o.textContent = v;
-    if (v === curC) o.selected = true;
-    selColecao.appendChild(o);
+    if (v === curT) o.selected = true;
+    selTipo.appendChild(o);
   });
 }
 
 export async function renderDBTable() {
-  const text    = document.getElementById('db-search').value;
-  const produto = document.getElementById('db-filter-produto').value;
-  const colecao = document.getElementById('db-filter-colecao').value;
+  const text     = document.getElementById('db-search').value;
+  const franquia = document.getElementById('db-filter-franquia').value;
+  const tipo     = document.getElementById('db-filter-tipo').value;
 
   const { rows, total, page, pageSize, pages } = await queryProducts({
     text,
-    produtos: produto ? [produto] : [],
-    colecoes: colecao ? [colecao] : [],
+    franquias: franquia ? [franquia] : [],
+    produtos:  tipo     ? [tipo]     : [],
     page: state.dbPage,
     pageSize: state.dbPageSize,
   });
@@ -233,10 +262,10 @@ export async function renderDBTable() {
             : `<div class="no-thumb">📦</div>`}
         </td>
         <td class="name-cell"><span class="truncate" title="${escHtml(p.name)}">${escHtml(stripEbook(p.name))}</span></td>
-        <td class="meta-cell">${escHtml(stripEbook(p.produto))}</td>
+        <td class="meta-cell">${escHtml(p.produto)}</td>
         <td class="meta-cell">${escHtml(p.colecao)}</td>
         <td class="meta-cell"><span class="truncate" title="${escHtml(p.estampa)}">${escHtml(p.estampa)}</span></td>
-        <td class="price-cell">${displayPrice ? 'R$ ' + escHtml(displayPrice) : '—'}</td>
+        <td class="price-cell">${displayPrice ? 'R$ ' + formatBRL(displayPrice) : '—'}</td>
       </tr>`;
     }).join('');
   }
@@ -273,8 +302,8 @@ export async function clearDBConfirm() {
 async function initGeneratorScreen() {
   const count = await countProducts();
 
-  const emptyEl  = document.getElementById('generator-empty');
-  const panelEl  = document.getElementById('filter-panel');
+  const emptyEl = document.getElementById('generator-empty');
+  const panelEl = document.getElementById('filter-panel');
 
   if (count === 0) {
     emptyEl.style.display  = 'block';
@@ -286,10 +315,9 @@ async function initGeneratorScreen() {
   emptyEl.style.display = 'none';
   panelEl.style.display = '';
 
-  await renderFilterChips();
+  await renderGeneratorFilters();
   await applyFilters();
 
-  // Set price range max from data
   const all = await getAllProducts();
   const prices = all.map(p => parseFloat(p.price)).filter(n => isFinite(n));
   if (prices.length) {
@@ -303,34 +331,84 @@ async function initGeneratorScreen() {
   }
 }
 
-async function renderFilterChips() {
-  const [produtos, colecoes] = await Promise.all([
+async function renderGeneratorFilters() {
+  const [franquias, tipos] = await Promise.all([
+    getDistinctValues('franquia'),
     getDistinctValues('produto'),
-    getDistinctValues('colecao'),
   ]);
+  renderFranquiaChips(franquias);
+  renderTipoChips(tipos);
+  await renderCorDots();
+}
 
-  renderChips('chips-produto', produtos, state.selectedProdutos, v => {
-    toggleSet(state.selectedProdutos, v);
-    applyFiltersDebounced();
-  });
-
-  renderChips('chips-colecao', colecoes, state.selectedColecoes, v => {
-    toggleSet(state.selectedColecoes, v);
-    applyFiltersDebounced();
+function renderFranquiaChips(franquias) {
+  const container = document.getElementById('chips-franquia');
+  container.innerHTML = franquias.map(f => {
+    const color    = FRANQUIA_COLORS[f] || '#757575';
+    const isActive = state.selectedFranquias.has(f);
+    return `<button class="filter-chip chip-franquia ${isActive ? 'active' : ''}"
+      data-value="${escHtml(f)}" style="--fc:${color}">${escHtml(f)}</button>`;
+  }).join('');
+  container.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggleSet(state.selectedFranquias, btn.dataset.value);
+      btn.classList.toggle('active', state.selectedFranquias.has(btn.dataset.value));
+      applyFiltersDebounced();
+    });
   });
 }
 
-function renderChips(containerId, values, selectedSet, onClick) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = values.map(v => `
-    <button class="filter-chip ${selectedSet.has(v) ? 'active' : ''}" data-value="${escHtml(v)}">
-      ${escHtml(stripEbook(v))}
-    </button>
-  `).join('');
+function renderTipoChips(tipos) {
+  const container = document.getElementById('chips-tipo');
+  container.innerHTML = tipos.map(t => {
+    const isActive = state.selectedTipos.has(t);
+    return `<button class="filter-chip ${isActive ? 'active' : ''}" data-value="${escHtml(t)}">${escHtml(t)}</button>`;
+  }).join('');
   container.querySelectorAll('.filter-chip').forEach(btn => {
     btn.addEventListener('click', () => {
-      onClick(btn.dataset.value);
-      btn.classList.toggle('active', selectedSet.has(btn.dataset.value));
+      toggleSet(state.selectedTipos, btn.dataset.value);
+      btn.classList.toggle('active', state.selectedTipos.has(btn.dataset.value));
+      applyFiltersDebounced();
+    });
+  });
+}
+
+async function renderCorDots() {
+  const all = await getAllProducts();
+  const colorCounts = new Map();
+  all.forEach(p => {
+    const color = extractColor(p.produto || '');
+    if (color) colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+  });
+
+  const row       = document.getElementById('filter-row-cor');
+  const container = document.getElementById('filter-cores');
+
+  if (colorCounts.size === 0) {
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = '';
+
+  container.innerHTML = [...colorCounts.entries()].map(([color, count]) => {
+    const hex      = COLOR_HEX_MAP[color] || '#ccc';
+    const isLight  = color === 'Branca' || color === 'Branco' || color === 'Padrão';
+    const isActive = state.selectedCores.has(color);
+    const shadow   = isActive ? `box-shadow:0 0 0 2px white,0 0 0 4px ${hex}` : '';
+    return `<button class="filter-cor-dot ${isLight ? 'light' : ''}"
+      data-color="${escHtml(color)}"
+      style="background:${hex};${shadow}"
+      title="${escHtml(color)} (${count})"></button>`;
+  }).join('');
+
+  container.querySelectorAll('.filter-cor-dot').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.dataset.color;
+      const hex   = COLOR_HEX_MAP[color] || '#ccc';
+      toggleSet(state.selectedCores, color);
+      const active = state.selectedCores.has(color);
+      btn.style.boxShadow = active ? `0 0 0 2px white, 0 0 0 4px ${hex}` : '';
+      applyFiltersDebounced();
     });
   });
 }
@@ -340,7 +418,7 @@ function toggleSet(set, value) {
 }
 
 export function onPriceRange(input) {
-  const val = parseInt(input.value);
+  const val   = parseInt(input.value);
   const isMax = val >= state.priceRangeMax;
   state.filterMaxPrice = isMax ? Infinity : val;
   document.getElementById('filter-price-label').textContent = isMax ? 'Sem limite' : `R$ ${val}`;
@@ -348,15 +426,16 @@ export function onPriceRange(input) {
 }
 
 export function clearFilters() {
-  state.selectedProdutos.clear();
-  state.selectedColecoes.clear();
+  state.selectedFranquias.clear();
+  state.selectedTipos.clear();
+  state.selectedCores.clear();
   state.filterEstampa  = '';
   state.filterMaxPrice = Infinity;
-  document.getElementById('filter-estampa').value   = '';
+  document.getElementById('filter-estampa').value = '';
   const slider = document.getElementById('filter-price-range');
   slider.value = slider.max;
   document.getElementById('filter-price-label').textContent = 'Sem limite';
-  renderFilterChips();
+  renderGeneratorFilters();
   applyFilters();
 }
 
@@ -369,12 +448,20 @@ export function applyFiltersDebounced() {
 export async function applyFilters() {
   state.filterEstampa = document.getElementById('filter-estampa').value;
 
-  const products = await filterProducts({
-    text:     state.filterEstampa,
-    produtos: [...state.selectedProdutos],
-    colecoes: [...state.selectedColecoes],
-    maxPrice: state.filterMaxPrice,
+  let products = await filterProducts({
+    text:      state.filterEstampa,
+    franquias: [...state.selectedFranquias],
+    produtos:  [...state.selectedTipos],
+    maxPrice:  state.filterMaxPrice,
   });
+
+  // Color filter done in-memory (needs extractColor from parser)
+  if (state.selectedCores.size > 0) {
+    products = products.filter(p => {
+      const color = extractColor(p.produto || '');
+      return state.selectedCores.has(color || 'Padrão');
+    });
+  }
 
   state.filteredProducts = products;
   document.getElementById('filter-count-num').textContent = products.length.toLocaleString('pt-BR');
@@ -407,10 +494,10 @@ function groupByColorVariants(prods) {
 }
 
 function renderProductCard(group) {
-  const p   = group.representative;
-  const price = getPriceByProduct(p.produto, p.price, p.name);
+  const p          = group.representative;
+  const price      = getPriceByProduct(p.produto, p.price, p.name);
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
-  const displayProduto = escHtml(stripEbook(group.baseProduto));
+  const displayProduto = escHtml(stripColor(stripEbook(group.baseProduto)));
   const multiColor     = group.colors.length > 1;
 
   const colorsHtml = multiColor ? `
@@ -434,7 +521,7 @@ function renderProductCard(group) {
         <div class="product-name">${displayName}</div>
         ${displayProduto && displayProduto !== 'Capinha'
           ? `<div class="product-sku">${displayProduto}</div>` : ''}
-        ${price ? `<div class="product-price">R$ ${escHtml(price)}</div>` : ''}
+        ${price ? `<div class="product-price">R$ ${formatBRL(price)}</div>` : ''}
         ${colorsHtml}
       </div>
     </div>`;
@@ -455,7 +542,7 @@ function renderProducts(products) {
 
   const groups = {};
   products.forEach(p => {
-    const key = p.colecao || p.team || 'Geral';
+    const key = p.colecao || 'Geral';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
@@ -534,6 +621,12 @@ function escHtml(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function formatBRL(price) {
+  const n = parseFloat(price);
+  if (isNaN(n)) return '';
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -544,22 +637,26 @@ function showToast(msg) {
 // ── INIT ──
 buildSellerOptions();
 renderSellerInfo();
-switchTab('generator');
+
+(async () => {
+  await migrateDB();
+  switchTab('generator');
+})();
 
 // Expose to inline HTML event handlers
-window.switchTab            = switchTab;
-window.updateSeller         = updateSeller;
-window.openEditSeller       = openEditSeller;
-window.saveEditSeller       = saveEditSeller;
-window.uploadBanner         = uploadBanner;
-window.changeBg             = changeBg;
-window.importToDB           = importToDB;
-window.renderDBTable        = renderDBTable;
-window.dbPagePrev           = dbPagePrev;
-window.dbPageNext           = dbPageNext;
-window.clearDBConfirm       = clearDBConfirm;
-window.onPriceRange         = onPriceRange;
-window.clearFilters         = clearFilters;
+window.switchTab             = switchTab;
+window.updateSeller          = updateSeller;
+window.openEditSeller        = openEditSeller;
+window.saveEditSeller        = saveEditSeller;
+window.uploadBanner          = uploadBanner;
+window.changeBg              = changeBg;
+window.importToDB            = importToDB;
+window.renderDBTable         = renderDBTable;
+window.dbPagePrev            = dbPagePrev;
+window.dbPageNext            = dbPageNext;
+window.clearDBConfirm        = clearDBConfirm;
+window.onPriceRange          = onPriceRange;
+window.clearFilters          = clearFilters;
 window.applyFiltersDebounced = applyFiltersDebounced;
-window.gerarCatalogo        = gerarCatalogo;
-window.generatePDF          = generatePDF;
+window.gerarCatalogo         = gerarCatalogo;
+window.generatePDF           = generatePDF;

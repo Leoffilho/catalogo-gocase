@@ -131,11 +131,11 @@
         placeholder="Buscar por nome, estampa, coleção..."
         oninput="renderDBTable()"
       />
-      <select class="btn btn-outline" id="db-filter-produto" onchange="renderDBTable()" style="padding:7px 10px">
-        <option value="">Todos os produtos</option>
+      <select class="btn btn-outline" id="db-filter-franquia" onchange="renderDBTable()" style="padding:7px 10px">
+        <option value="">Todas as franquias</option>
       </select>
-      <select class="btn btn-outline" id="db-filter-colecao" onchange="renderDBTable()" style="padding:7px 10px">
-        <option value="">Todas as coleções</option>
+      <select class="btn btn-outline" id="db-filter-tipo" onchange="renderDBTable()" style="padding:7px 10px">
+        <option value="">Todos os tipos</option>
       </select>
     </div>
 
@@ -179,21 +179,26 @@
       <div class="filter-panel-title">Filtros do Catálogo</div>
 
       <div class="filter-rows">
-        <!-- Produto -->
+        <!-- Franquia -->
         <div class="filter-row">
-          <span class="filter-label">Produto</span>
-          <div class="filter-chips" id="chips-produto"></div>
+          <span class="filter-label">Franquia</span>
+          <div class="filter-chips" id="chips-franquia"></div>
         </div>
-        <!-- Coleção -->
+        <!-- Tipo de Produto -->
         <div class="filter-row">
-          <span class="filter-label">Coleção</span>
-          <div class="filter-chips" id="chips-colecao"></div>
+          <span class="filter-label">Tipo</span>
+          <div class="filter-chips" id="chips-tipo"></div>
         </div>
         <!-- Estampa -->
         <div class="filter-row">
           <span class="filter-label">Estampa</span>
           <input type="search" class="filter-text-input" id="filter-estampa"
             placeholder="Buscar estampa..." oninput="applyFiltersDebounced()" />
+        </div>
+        <!-- Cor -->
+        <div class="filter-row" id="filter-row-cor" style="display:none">
+          <span class="filter-label">Cor</span>
+          <div class="filter-cor-dots" id="filter-cores"></div>
         </div>
         <!-- Preço máximo -->
         <div class="filter-row">

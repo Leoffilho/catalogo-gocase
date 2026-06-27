@@ -68,6 +68,23 @@ export async function clearDB() {
   });
 }
 
+// Applies a transform to every product; if transform returns non-null, saves the result
+export async function updateAllProducts(transform) {
+  const db  = await openDB();
+  const all = await getAllProducts();
+  for (const p of all) {
+    const updated = transform(p);
+    if (updated !== null && updated !== undefined) {
+      await new Promise(resolve => {
+        const tx  = db.transaction(STORE, 'readwrite');
+        const req = tx.objectStore(STORE).put(updated);
+        req.onsuccess = () => resolve();
+        req.onerror   = () => resolve(); // don't fail migration on individual errors
+      });
+    }
+  }
+}
+
 export async function getDistinctValues(field) {
   const all = await getAllProducts();
   const seen = new Set();
@@ -76,15 +93,18 @@ export async function getDistinctValues(field) {
 }
 
 // Paged query with optional filters
-// filters: { text, produto, colecao, maxPrice }
-export async function queryProducts({ text = '', produtos = [], colecoes = [], maxPrice = Infinity, page = 1, pageSize = 50 } = {}) {
+export async function queryProducts({
+  text = '', produtos = [], colecoes = [], franquias = [],
+  maxPrice = Infinity, page = 1, pageSize = 50,
+} = {}) {
   const all = await getAllProducts();
-
   const lower = text.toLowerCase();
+
   const filtered = all.filter(p => {
-    if (lower && ![p.name, p.produto, p.colecao, p.estampa].some(f => (f || '').toLowerCase().includes(lower))) return false;
-    if (produtos.length  && !produtos.includes(p.produto))  return false;
-    if (colecoes.length  && !colecoes.includes(p.colecao))  return false;
+    if (lower && ![p.name, p.produto, p.colecao, p.estampa, p.franquia].some(f => (f || '').toLowerCase().includes(lower))) return false;
+    if (produtos.length  && !produtos.includes(p.produto))   return false;
+    if (colecoes.length  && !colecoes.includes(p.colecao))   return false;
+    if (franquias.length && !franquias.includes(p.franquia)) return false;
     const pr = parseFloat(p.price);
     if (isFinite(maxPrice) && isFinite(pr) && pr > maxPrice) return false;
     return true;
@@ -97,13 +117,16 @@ export async function queryProducts({ text = '', produtos = [], colecoes = [], m
 }
 
 // For catalog generator: all matching products (no pagination)
-export async function filterProducts({ text = '', produtos = [], colecoes = [], maxPrice = Infinity } = {}) {
+export async function filterProducts({
+  text = '', produtos = [], colecoes = [], franquias = [], maxPrice = Infinity,
+} = {}) {
   const all = await getAllProducts();
   const lower = text.toLowerCase();
   return all.filter(p => {
-    if (lower && ![p.name, p.produto, p.colecao, p.estampa].some(f => (f || '').toLowerCase().includes(lower))) return false;
-    if (produtos.length  && !produtos.includes(p.produto))  return false;
-    if (colecoes.length  && !colecoes.includes(p.colecao))  return false;
+    if (lower && ![p.name, p.produto, p.colecao, p.estampa, p.franquia].some(f => (f || '').toLowerCase().includes(lower))) return false;
+    if (produtos.length  && !produtos.includes(p.produto))   return false;
+    if (colecoes.length  && !colecoes.includes(p.colecao))   return false;
+    if (franquias.length && !franquias.includes(p.franquia)) return false;
     const pr = parseFloat(p.price);
     if (isFinite(maxPrice) && isFinite(pr) && pr > maxPrice) return false;
     return true;

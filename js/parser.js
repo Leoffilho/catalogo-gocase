@@ -39,6 +39,28 @@ export function getPriceByProduct(produto, fallback, fullName) {
   return fallback || '';
 }
 
+// ── FRANQUIA DETECTION ──
+const FRANQUIA_MAP = [
+  { franquia: 'Harry Potter', keywords: ['harry potter', 'hogwarts', 'grifinória', 'grifinoria', 'sonserina', 'lufa-lufa', 'lufa lufa', 'corvinal', 'dumbledore', 'hermione', 'voldemort', 'dobby', 'edwiges', 'butterbeer', 'honey dukes', 'plataforma 9', 'relíquias da morte', 'expecto patronum', 'câmara secreta'] },
+  { franquia: 'Friends', keywords: ['friends', 'central perk', 'monica', 'rachel', 'chandler', 'joey', 'ross', 'phoebe', 'lobster'] },
+  { franquia: 'Game of Thrones', keywords: ['game of thrones', 'stark', 'lannister', 'targaryen', 'daenerys', 'jon snow', 'tyrion', 'arya', 'cersei', 'westeros', 'winter is coming', 'dracarys', 'iron throne'] },
+  { franquia: 'House of the Dragon', keywords: ['house of the dragon', 'house of dragon', 'hotd', 'rhaenyra', 'daemon', 'caraxes', 'syrax', 'dragonstone', 'alicent', 'vhagar'] },
+  { franquia: 'Flamengo', keywords: ['flamengo', 'mengão', 'urubu'] },
+  { franquia: 'Palmeiras', keywords: ['palmeiras', 'verdão', 'porco'] },
+  { franquia: 'Corinthians', keywords: ['corinthians', 'timão', 'sccp'] },
+  { franquia: 'Grêmio', keywords: ['grêmio', 'gremio', 'tricolor gaúcho'] },
+  { franquia: 'As Meninas Super Poderosas', keywords: ['super poderosas', 'powerpuff', 'docinho', 'florzinha', 'lindinha', 'buttercup', 'blossom', 'bubbles'] },
+  { franquia: 'Warner', keywords: ['warner'] },
+];
+
+export function getFranquia(name) {
+  const lower = (name || '').toLowerCase();
+  for (const entry of FRANQUIA_MAP) {
+    if (entry.keywords.some(k => lower.includes(k))) return entry.franquia;
+  }
+  return 'Outros';
+}
+
 // ── COLOR HANDLING ──
 export const COLOR_WORDS = [
   'Preta','Preto','Rosa','Branca','Branco','Azul',
@@ -66,7 +88,6 @@ const _colorPattern = `[\\s-]+(${COLOR_WORDS.join('|')})$`;
 export function extractColor(str) {
   const match = (str || '').trim().match(new RegExp(_colorPattern, 'i'));
   if (!match) return null;
-  // Return the canonical casing from COLOR_WORDS
   return COLOR_WORDS.find(c => c.toLowerCase() === match[1].toLowerCase()) || match[1];
 }
 
@@ -74,7 +95,7 @@ export function stripColor(str) {
   return (str || '').trim().replace(new RegExp(_colorPattern, 'i'), '').trim();
 }
 
-// Known Gocase collection names — used to infer "Capinha" when name has only 2 parts
+// Known Gocase collection/franchise names — used to infer "Capinha" when name has only 2 parts
 const KNOWN_COLLECTIONS = new Set([
   'Harry Potter', 'Friends', 'Warner', 'Disney', 'Marvel', 'Star Wars',
   'Stranger Things', 'Game of Thrones', 'Batman', 'Superman', 'Mulher Maravilha',
@@ -93,6 +114,22 @@ const KNOWN_COLLECTIONS = new Set([
   'Super Poderosas', 'Princesas', 'Toy Story', 'Frozen',
   'Lilo e Stitch', 'Winnie the Pooh', 'Alice', 'Bambi',
   'Bob Esponja', 'Patricinho', 'Sandy e Junior',
+]);
+
+// Known physical product types — prevents treating product names as collection names
+const KNOWN_PRODUTOS = new Set([
+  'Garrafa', 'Garrafa Magsafe', 'Garrafa Fresh 950', 'Garrafa Fresh 650',
+  'Garrafa Fresh', 'Garrafa Pro', 'Garrafa Mini', 'Garrafa Urban',
+  'Garrafa Térmica', 'Garrafa Térmica Fresh', 'Garrafa Térmica Urban',
+  'Garrafa Térmica Mini', 'Garrafa Térmica Pro',
+  'Copo', 'Copo Life 1170', 'Copo Life 880', 'Copo Vibe', 'Copo Life', 'Copo Térmico',
+  'Tote', 'Tote Daily', 'Tote Mini', 'Tote Pop',
+  'Mala', 'Mala Trip', 'Mala Joy',
+  'Mochila', 'Mochila Pop', 'Mochila Executiva', 'Mochila Voyage', 'Mochila Fun',
+  'Bolsa', 'Bolsa Moove',
+  'Necessaire', 'Necessaire Trip',
+  'Lancheira', 'Lancheira Fruit',
+  'Capinha', 'Slim Air', 'Infinite Air',
 ]);
 
 // Expand known collections from imported data (call after each import)
@@ -120,9 +157,13 @@ export function parseName(fullName) {
   }
 
   if (parts.length === 2) {
-    const isKnown = KNOWN_COLLECTIONS.has(parts[0]);
-    if (isKnown) {
+    // Known franchise/collection → must be a Capinha
+    if (KNOWN_COLLECTIONS.has(parts[0])) {
       return { produto: 'Capinha', colecao: parts[0], estampa: parts[1] };
+    }
+    // Known physical product → part[1] is the collection/franchise
+    if (KNOWN_PRODUTOS.has(parts[0]) || [...KNOWN_PRODUTOS].some(p => parts[0].startsWith(p + ' '))) {
+      return { produto: parts[0], colecao: parts[1], estampa: '' };
     }
     return { produto: parts[0], colecao: parts[1], estampa: '' };
   }
@@ -131,24 +172,23 @@ export function parseName(fullName) {
 }
 
 // Extracts collection from scraper URL
-// e.g. https://www.gocase.com.br/collections/friends → "Friends"
-// e.g. /t/collections/warner/super-poderosas → "Warner"
 export function parseURL(url) {
   if (!url) return '';
   const match = url.match(/\/collections\/([^/?#]+)(?:\/([^/?#]+))?/);
   if (!match) return '';
-  const colecao = titleCase(match[1].replace(/-/g, ' '));
-  return colecao;
+  return titleCase(match[1].replace(/-/g, ' '));
 }
 
 // Cleans price string to numeric string "89.90"
+// Handles both Brazilian format (1.234,56) and international format (1234.56)
 export function cleanPrice(raw) {
   if (!raw && raw !== 0) return '';
-  const str = String(raw)
-    .replace(/R\$\s*/gi, '')
-    .replace(/\./g, '')   // remove thousand separators
-    .replace(',', '.')    // decimal comma → dot
-    .trim();
+  let str = String(raw).replace(/R\$\s*/gi, '').trim();
+  if (str.includes(',')) {
+    // Brazilian format: dots are thousand separators, comma is decimal
+    str = str.replace(/\./g, '').replace(',', '.');
+  }
+  // No comma → dot is already the decimal separator (international format)
   const n = parseFloat(str);
   return isNaN(n) ? '' : n.toFixed(2);
 }
@@ -196,11 +236,12 @@ export function parseRow(row, fonte) {
   return {
     id:          crypto.randomUUID(),
     name,
-    produto:     parsed.produto  || 'Capinha',
+    produto:     stripEbook(parsed.produto  || 'Capinha'),
     colecao:     parsed.colecao  || 'Geral',
     estampa:     parsed.estampa  || '',
     price:       cleanPrice(rawPrice),
     image,
+    franquia:    getFranquia(name),
     fonte:       fonte || '',
     importadoEm: new Date().toISOString(),
     dedup_key,
