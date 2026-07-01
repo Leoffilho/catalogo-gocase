@@ -18,17 +18,15 @@ js/sellers.js       — lista de revendedores (nome, e-mail, telefone)
 
 O matching é feito via `String.includes()` (case-insensitive), então as chaves são substrings dos nomes reais. As entradas mais específicas devem vir primeiro para evitar falsos positivos.
 
-| Chave no código (`key`) | Nome real do produto na planilha | Preço (R$) |
+| Chave no código (`key`) | Exemplo de nome na planilha | Preço (R$) |
 |---|---|---|
-| `Garrafa Magsafe` | Garrafa Magsafe | 172,67 |
-| `Garrafa Fresh 950` | Garrafa Fresh 950ml | 106,60 |
-| `Garrafa Fresh 650` | Garrafa Fresh 650ml | 99,33 |
-| `Garrafa Pro` | Garrafa Pro 750 | 132,67 |
-| `Garrafa Mini` | Garrafa Mini 350 | 86,60 |
-| `Garrafa Urban` | Garrafa Urban | 72,67 |
-| `Copo Life 1170` | Copo Life 1170ml | 139,33 |
-| `Copo Life 880` | Copo Life 880ml | 126,00 |
-| `Copo Vibe` | Copo Vibe | 92,67 |
+| `Garrafa Térmica Magsafe` | Garrafa Térmica Magsafe | 172,67 |
+| `Garrafa Térmica Pro` | Garrafa Térmica Pro 750 | 132,67 |
+| `Garrafa Térmica Fresh` | Garrafa Térmica Fresh 650ml / 950ml | 99,33 |
+| `Garrafa Térmica Mini` | Garrafa Térmica Mini 350 | 86,60 |
+| `Garrafa Térmica Urban` | Garrafa Térmica Urban | 72,67 |
+| `Copo Térmico Life` | Copo Térmico Life 880ml / 1170ml | 126,00 |
+| `Copo Térmico Vibe` | Copo Térmico Vibe | 92,67 |
 | `Tote Daily` | Tote Daily | 146,00 |
 | `Tote Mini` | Tote Mini | 146,00 |
 | `Tote Pop` | Tote Pop | 132,67 |
@@ -41,10 +39,9 @@ O matching é feito via `String.includes()` (case-insensitive), então as chaves
 | `Bolsa Moove` | Bolsa Moove | 139,33 |
 | `Necessaire Trip` | Necessaire Trip | 52,67 |
 | `Lancheira Fruit` | Lancheira Fruit | 153,33 |
-| `Slim Air` | Slim Air | 22,22 |
-| `Infinite Air` | Infinite Air | 31,07 |
+| `Capinha` | Capinha / Slim Air / Infinite Air | 31,07 |
 
-> **Ordem importa:** `Garrafa Fresh 950` antes de `Garrafa Fresh 650`, `Copo Life 1170` antes de `Copo Life 880`, `Mochila Executiva`/`Voyage`/`Fun` antes de `Mochila Pop`.
+> **Ordem importa:** `Magsafe` → `Pro` → `Fresh` → `Mini` → `Urban` (evita que "Pro" bata em "Garrafa Térmica Pro Magsafe"). `Capinha` sempre por último — chave genérica.
 
 ## Tarefas Comuns
 

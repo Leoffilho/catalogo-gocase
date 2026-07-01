@@ -3,31 +3,28 @@ export function stripEbook(str) {
   return (str || '').replace(/\s*\+\s*ebook\b/gi, '').replace(/\s{2,}/g, ' ').trim();
 }
 
-// ── FIXED PRICE TABLE (sorted longest-key-first to avoid partial shadowing) ──
+// ── FIXED PRICE TABLE (more-specific keys first to avoid partial shadowing) ──
 const PRICE_TABLE = [
-  { key: 'Garrafa Magsafe',   price: '172.67' },
-  { key: 'Garrafa Fresh 950', price: '106.60' },
-  { key: 'Garrafa Fresh 650', price: '99.33'  },
-  { key: 'Garrafa Pro',       price: '132.67' },
-  { key: 'Garrafa Mini',      price: '86.60'  },
-  { key: 'Garrafa Urban',     price: '72.67'  },
-  { key: 'Copo Life 1170',    price: '139.33' },
-  { key: 'Copo Life 880',     price: '126.00' },
-  { key: 'Copo Vibe',         price: '92.67'  },
-  { key: 'Tote Daily',        price: '146.00' },
-  { key: 'Tote Mini',         price: '146.00' },
-  { key: 'Tote Pop',          price: '132.67' },
-  { key: 'Mala Trip',         price: '332.59' },
-  { key: 'Mala Joy',          price: '159.33' },
-  { key: 'Mochila Pop',       price: '132.67' },
-  { key: 'Mochila Executiva', price: '179.33' },
-  { key: 'Mochila Voyage',    price: '259.33' },
-  { key: 'Mochila Fun',       price: '219.33' },
-  { key: 'Bolsa Moove',       price: '139.33' },
-  { key: 'Necessaire Trip',   price: '52.67'  },
-  { key: 'Lancheira Fruit',   price: '153.33' },
-  { key: 'Slim Air',          price: '22.22'  },
-  { key: 'Infinite Air',      price: '31.07'  },
+  { key: 'Garrafa Térmica Magsafe',  price: '172.67' },
+  { key: 'Garrafa Térmica Pro',      price: '132.67' },
+  { key: 'Garrafa Térmica Fresh',    price: '99.33'  },
+  { key: 'Garrafa Térmica Mini',     price: '86.60'  },
+  { key: 'Garrafa Térmica Urban',    price: '72.67'  },
+  { key: 'Copo Térmico Life',        price: '126.00' },
+  { key: 'Copo Térmico Vibe',        price: '92.67'  },
+  { key: 'Tote Daily',               price: '146.00' },
+  { key: 'Tote Mini',                price: '146.00' },
+  { key: 'Tote Pop',                 price: '132.67' },
+  { key: 'Mala Trip',                price: '332.59' },
+  { key: 'Mala Joy',                 price: '159.33' },
+  { key: 'Mochila Pop',              price: '132.67' },
+  { key: 'Mochila Executiva',        price: '179.33' },
+  { key: 'Mochila Voyage',           price: '259.33' },
+  { key: 'Mochila Fun',              price: '219.33' },
+  { key: 'Bolsa Moove',              price: '139.33' },
+  { key: 'Necessaire Trip',          price: '52.67'  },
+  { key: 'Lancheira Fruit',          price: '153.33' },
+  { key: 'Capinha',                  price: '31.07'  },
 ];
 
 export function getPriceByProduct(produto, fallback, fullName) {
