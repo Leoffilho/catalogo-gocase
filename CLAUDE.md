@@ -26,22 +26,26 @@ O matching é feito via `String.includes()` (case-insensitive), então as chaves
 | `Garrafa Térmica Mini` | Garrafa Térmica Mini 350 | 86,60 |
 | `Garrafa Térmica Urban` | Garrafa Térmica Urban | 72,67 |
 | `Copo Térmico Life` | Copo Térmico Life 880ml / 1170ml | 126,00 |
+| `Copo Térmico Cerveja` | Copo Térmico Cerveja | 92,67 |
 | `Copo Térmico Vibe` | Copo Térmico Vibe | 92,67 |
 | `Tote Daily` | Tote Daily | 146,00 |
 | `Tote Mini` | Tote Mini | 146,00 |
 | `Tote Pop` | Tote Pop | 132,67 |
 | `Mala Trip` | Mala Trip | 332,59 |
+| `Bolsa Joy Pro` | Bolsa Joy Pro | 159,33 |
 | `Mala Joy` | Mala Joy | 159,33 |
 | `Mochila Pop` | Mochila Pop | 132,67 |
 | `Mochila Executiva` | Mochila Executiva | 179,33 |
 | `Mochila Voyage` | Mochila Voyage | 259,33 |
 | `Mochila Fun` | Mochila Fun | 219,33 |
 | `Bolsa Moove` | Bolsa Moove | 139,33 |
-| `Necessaire Trip` | Necessaire Trip | 52,67 |
+| `Bolsa Térmica Fruit` | Bolsa Térmica Fruit / Bolsa Térmica Fruit Pro | 153,33 |
 | `Lancheira Fruit` | Lancheira Fruit | 153,33 |
-| `Capinha` | Capinha / Slim Air / Infinite Air | 31,07 |
+| `Bolsa Térmica Fun` | Bolsa Térmica Fun | 120,00 |
+| `Necessaire Trip` | Necessaire Trip | 52,67 |
+| `Capinha` | Capinha (fallback genérico) | 31,07 |
 
-> **Ordem importa:** `Magsafe` → `Pro` → `Fresh` → `Mini` → `Urban` (evita que "Pro" bata em "Garrafa Térmica Pro Magsafe"). `Capinha` sempre por último — chave genérica.
+> **Ordem importa:** `Bolsa Joy Pro` antes de `Mala Joy`; `Bolsa Térmica Fruit` antes de entradas mais curtas; `Capinha` sempre por último.
 
 ## Tarefas Comuns
 
