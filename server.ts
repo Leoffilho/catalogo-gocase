@@ -1,17 +1,10 @@
-const ADMIN_EMAIL = 'leonardo.filho@gocase.com';
-
-async function getUserEmail(request: Request): Promise<string | null> {
+function isAdminToken(request: Request, env: any): boolean {
   const cookie = request.headers.get('cookie') || '';
-  const match  = cookie.match(/cf_authorization=([^;]+)/);
-  if (!match) return null;
-  try {
-    const [, payload] = match[1].split('.');
-    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return decoded.email || null;
-  } catch { return null; }
+  const match  = cookie.match(/admin_token=([^;]+)/);
+  if (!match) return false;
+  return match[1] === env.ADMIN_TOKEN;
 }
 
-function isAdmin(email: string | null) { return email === ADMIN_EMAIL; }
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -39,8 +32,22 @@ export default {
     }});
 
     if (path === '/api/me' && method === 'GET') {
-      const email = await getUserEmail(request);
-      return json({ email, isAdmin: isAdmin(email) });
+      return json({ isAdmin: isAdminToken(request, env) });
+    }
+
+    if (path === '/api/admin-login' && method === 'POST') {
+      const body = await request.json() as { password: string };
+      if (body.password === env.ADMIN_PASSWORD) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Set-Cookie': `admin_token=${env.ADMIN_TOKEN}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`,
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      }
+      return err('Senha incorreta', 401);
     }
 
     if (path === '/api/count' && method === 'GET') {
@@ -85,8 +92,7 @@ export default {
     }
 
     if (path === '/api/products' && method === 'POST') {
-      const email = await getUserEmail(request);
-      if (!isAdmin(email)) return err('Não autorizado', 403);
+      if (!isAdminToken(request, env)) return err('Não autorizado', 403);
       const body = await request.json() as { products: any[] };
       let added = 0, skipped = 0;
       for (const p of body.products) {
@@ -102,8 +108,7 @@ export default {
     }
 
     if (path === '/api/products' && method === 'DELETE') {
-      const email = await getUserEmail(request);
-      if (!isAdmin(email)) return err('Não autorizado', 403);
+      if (!isAdminToken(request, env)) return err('Não autorizado', 403);
       await env.DB.exec('DELETE FROM products', []);
       return json({ ok: true });
     }

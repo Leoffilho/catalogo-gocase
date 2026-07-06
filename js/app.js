@@ -21,7 +21,35 @@ async function checkAdmin() {
       badge.style.cssText = 'color:#e11d48;font-weight:700;font-size:11px';
       nav.appendChild(badge);
     }
+  } else {
+    const nav = document.querySelector('.tab-nav');
+    if (nav) {
+      const btn = document.createElement('button');
+      btn.textContent = '🔐';
+      btn.title = 'Login Admin';
+      btn.style.cssText = 'border:none;background:transparent;cursor:pointer;font-size:16px;margin-left:auto;padding:8px 16px;opacity:0.3';
+      btn.addEventListener('click', openAdminLogin);
+      nav.appendChild(btn);
+    }
   }
+}
+
+function openAdminLogin() {
+  const senha = prompt('Senha de administrador:');
+  if (!senha) return;
+  fetch('/api/admin-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: senha }),
+    credentials: 'include',
+  }).then(r => r.json()).then(data => {
+    if (data.ok) {
+      showToast('✓ Login realizado com sucesso');
+      location.reload();
+    } else {
+      showToast('⚠ Senha incorreta');
+    }
+  }).catch(() => showToast('⚠ Erro ao fazer login'));
 }
 
 // ── STATE ──
