@@ -653,9 +653,10 @@ export async function generatePDF() {
 
   try {
     const { jsPDF } = window.jspdf;
+    const bgColor = document.body.style.backgroundColor || '#ffffff';
     const canvas = await html2canvas(catalog, {
       scale: 2, useCORS: true, allowTaint: true,
-      backgroundColor: '#ffffff', logging: false,
+      backgroundColor: bgColor, logging: false,
     });
 
     const imgW  = 210;

@@ -98,7 +98,7 @@ select.styled-select {
 }
 
 /* ── CATALOG WRAPPER ── */
-.catalog-wrapper { max-width: 1152px; margin: 0 auto; padding: 24px; }
+.catalog-wrapper { max-width: 1152px; margin: 0 auto; padding: 24px; background-color: inherit; }
 
 /* ── CATALOG HEADER ── */
 .catalog-header {
