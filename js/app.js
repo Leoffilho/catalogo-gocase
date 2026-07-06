@@ -1,6 +1,6 @@
 import { SELLERS } from './sellers.js';
 import { getAllProducts, addProducts, clearDB, clearDBByFranquia, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
-import { parseRow, learnCollections, stripEbook, stripColor, getPriceByProduct, getFranquia } from './parser.js';
+import { parseRow, learnCollections, stripEbook, stripColor, getPriceByProduct, getPriceByProductLisa, getFranquia } from './parser.js';
 
 // ── ADMIN CHECK ──
 let _isAdmin = false;
@@ -260,13 +260,12 @@ export async function importToDB(input) {
       rows.forEach(row => {
         const p = parseRow(row, file.name);
         if (p) {
-          if (manualFranquia) {
-            p.franquia = manualFranquia;
-            p.linha    = manualFranquia;
-          }
-          if (p.linha === 'Lisos') {
-            p.price = getPriceByProduct(p.produto, p.price, p.name, p.franquia, p.linha);
-          }
+          if (manualFranquia) p.franquia = manualFranquia;
+          const isLisa = manualFranquia === 'Lisos';
+          p.linha = isLisa ? 'Lisos' : 'Padrao';
+          p.price = isLisa
+            ? getPriceByProductLisa(p.produto, p.price)
+            : getPriceByProduct(p.produto, p.price);
           parsed.push(p);
         }
       });
@@ -349,9 +348,7 @@ export async function renderDBTable() {
     </div></td></tr>`;
   } else {
     tbody.innerHTML = rows.map(p => {
-      const displayPrice = p.linha === 'Lisos'
-        ? p.price
-        : getPriceByProduct(p.produto, p.price, null, p.franquia);
+      const displayPrice = p.price;
       const hasValidImg  = p.image && p.image.startsWith('http');
       return `
       <tr>
@@ -420,31 +417,6 @@ export async function clearDBByFranquiaConfirm() {
   showToast(`✓ ${deleted} produtos da franquia "${franquia}" removidos`);
   await initDBScreen();
   await initGeneratorScreen();
-}
-
-export async function recalcularPrecoLisos() {
-  if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
-  showToast('Recalculando preços da linha Lisa…');
-
-  const { rows } = await fetch('/api/products?all=1&franquia=Lisos', { credentials: 'include' }).then(r => r.json());
-  if (!rows.length) { showToast('Nenhum produto Lisos encontrado'); return; }
-
-  let atualizados = 0;
-  for (const p of rows) {
-    const precoCorreto = getPriceByProduct(p.produto, p.price, p.name, 'Lisos', 'Lisos');
-    if (precoCorreto && (precoCorreto !== p.price || p.linha !== 'Lisos')) {
-      await fetch('/api/products/' + p.id, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ price: precoCorreto, linha: 'Lisos' }),
-      });
-      atualizados++;
-    }
-  }
-
-  showToast(`✓ ${atualizados} produtos da linha Lisa atualizados`);
-  await renderDBTable();
 }
 
 export async function clearDBConfirm() {
@@ -630,9 +602,7 @@ export function gerarCatalogo() {
 }
 
 function renderProductCard(p) {
-  const price = p.linha === 'Lisos'
-    ? p.price
-    : getPriceByProduct(p.produto, p.price, p.name, p.franquia);
+  const price = p.price;
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
   const displayProduto = escHtml(stripEbook(p.produto || ''));
   return `
@@ -826,7 +796,6 @@ window.dbPagePrev            = dbPagePrev;
 window.dbPageNext            = dbPageNext;
 window.clearDBConfirm             = clearDBConfirm;
 window.clearDBByFranquiaConfirm   = clearDBByFranquiaConfirm;
-window.recalcularPrecoLisos       = recalcularPrecoLisos;
 window.onPriceRange          = onPriceRange;
 window.clearFilters          = clearFilters;
 window.applyFiltersDebounced = applyFiltersDebounced;
