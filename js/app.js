@@ -422,6 +422,31 @@ export async function clearDBByFranquiaConfirm() {
   await initGeneratorScreen();
 }
 
+export async function recalcularPrecoLisos() {
+  if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
+  showToast('Recalculando preços da linha Lisa…');
+
+  const { rows } = await fetch('/api/products?all=1&franquia=Lisos', { credentials: 'include' }).then(r => r.json());
+  if (!rows.length) { showToast('Nenhum produto Lisos encontrado'); return; }
+
+  let atualizados = 0;
+  for (const p of rows) {
+    const precoCorreto = getPriceByProduct(p.produto, p.price, p.name, 'Lisos', 'Lisos');
+    if (precoCorreto && (precoCorreto !== p.price || p.linha !== 'Lisos')) {
+      await fetch('/api/products/' + p.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ price: precoCorreto, linha: 'Lisos' }),
+      });
+      atualizados++;
+    }
+  }
+
+  showToast(`✓ ${atualizados} produtos da linha Lisa atualizados`);
+  await renderDBTable();
+}
+
 export async function clearDBConfirm() {
   if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
   const count = await countProducts();
@@ -801,6 +826,7 @@ window.dbPagePrev            = dbPagePrev;
 window.dbPageNext            = dbPageNext;
 window.clearDBConfirm             = clearDBConfirm;
 window.clearDBByFranquiaConfirm   = clearDBByFranquiaConfirm;
+window.recalcularPrecoLisos       = recalcularPrecoLisos;
 window.onPriceRange          = onPriceRange;
 window.clearFilters          = clearFilters;
 window.applyFiltersDebounced = applyFiltersDebounced;

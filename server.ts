@@ -29,7 +29,7 @@ export default {
 
     if (method === 'OPTIONS') return new Response(null, { headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, PATCH, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     }});
 
@@ -121,6 +121,29 @@ export default {
       if (!body.franquia) return err('Franquia não informada');
       const result = await env.DB.exec('DELETE FROM products WHERE franquia = ?', [body.franquia]);
       return json({ deleted: result.rowsWritten });
+    }
+
+    if (path === '/api/products/franquia' && method === 'PATCH') {
+      if (!isAdminToken(request, env)) return err('Não autorizado', 403);
+      const body = await request.json() as { franquia: string; updates: Record<string, string> };
+      if (!body.franquia || !body.updates) return err('Dados inválidos');
+      const sets = Object.keys(body.updates).map(k => `${k} = ?`).join(', ');
+      const vals = [...Object.values(body.updates), body.franquia];
+      await env.DB.exec(`UPDATE products SET ${sets} WHERE franquia = ?`, vals);
+      return json({ ok: true });
+    }
+
+    const patchMatch = path.match(/^\/api\/products\/([^/]+)$/);
+    if (patchMatch && method === 'PATCH') {
+      if (!isAdminToken(request, env)) return err('Não autorizado', 403);
+      const id = patchMatch[1];
+      const body = await request.json() as Record<string, string>;
+      const allowed = ['price', 'linha', 'franquia', 'produto', 'colecao', 'estampa'];
+      const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+      if (!Object.keys(updates).length) return err('Nada para atualizar');
+      const sets = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+      await env.DB.exec(`UPDATE products SET ${sets} WHERE id = ?`, [...Object.values(updates), id]);
+      return json({ ok: true });
     }
 
     return new Response('Not found', { status: 404 });
