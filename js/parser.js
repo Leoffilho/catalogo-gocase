@@ -84,16 +84,18 @@ const PRICE_TABLE_LISOS = [
   { key: 'Lancheira Fruit',          price: '133.27' },
 ];
 
-export function getPriceByProduct(produto, fallback, fullName, franquia) {
+export function getPriceByProduct(produto, fallback, fullName, franquia, linha) {
   // Resolve alias para nome canônico (cobre registros antigos sem Térmica no produto)
   const canonical = PRODUTO_ALIASES[produto] || produto;
-  const clean  = stripEbook(canonical || '').toLowerCase();
-  const tabela = (franquia === 'Lisos') ? PRICE_TABLE_LISOS : PRICE_TABLE;
-  if (franquia === 'Lisos') console.log('[LISOS] produto:', produto, '| canonical:', canonical, '| clean:', clean);
+  const clean     = stripEbook(canonical || '').toLowerCase();
+  // Usar tabela Lisa se linha OU franquia for "Lisos"
+  const isLiso    = (linha === 'Lisos') || (franquia === 'Lisos');
+  const tabela    = isLiso ? PRICE_TABLE_LISOS : PRICE_TABLE;
+  if (isLiso) console.log('[LISOS] produto:', produto, '| canonical:', canonical, '| clean:', clean);
   for (const entry of tabela) {
     if (clean.includes(entry.key.toLowerCase())) return entry.price;
   }
-  if (fullName) console.warn('[PREÇO NÃO MAPEADO]:', fullName, '| franquia:', franquia);
+  if (fullName) console.warn('[PREÇO NÃO MAPEADO]:', fullName, '| linha:', linha, '| franquia:', franquia);
   return fallback || '';
 }
 

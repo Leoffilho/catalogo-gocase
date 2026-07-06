@@ -260,7 +260,10 @@ export async function importToDB(input) {
       rows.forEach(row => {
         const p = parseRow(row, file.name);
         if (p) {
-          if (manualFranquia) p.franquia = manualFranquia;
+          if (manualFranquia) {
+            p.franquia = manualFranquia;
+            p.linha    = manualFranquia;
+          }
           parsed.push(p);
         }
       });
@@ -343,7 +346,7 @@ export async function renderDBTable() {
     </div></td></tr>`;
   } else {
     tbody.innerHTML = rows.map(p => {
-      const displayPrice = getPriceByProduct(p.produto, p.price, null, p.franquia);
+      const displayPrice = getPriceByProduct(p.produto, p.price, null, p.franquia, p.linha);
       const hasValidImg  = p.image && p.image.startsWith('http');
       return `
       <tr>
@@ -597,7 +600,7 @@ export function gerarCatalogo() {
 }
 
 function renderProductCard(p) {
-  const price = getPriceByProduct(p.produto, p.price, p.name, p.franquia);
+  const price = getPriceByProduct(p.produto, p.price, p.name, p.franquia, p.linha);
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
   const displayProduto = escHtml(stripEbook(p.produto || ''));
   return `
