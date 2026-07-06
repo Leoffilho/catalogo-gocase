@@ -1,6 +1,6 @@
 import { SELLERS } from './sellers.js';
 import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
-import { parseRow, learnCollections, stripEbook, getPriceByProduct, getFranquia } from './parser.js';
+import { parseRow, learnCollections, stripEbook, stripColor, getPriceByProduct, getFranquia } from './parser.js';
 
 // ── ADMIN CHECK ──
 let _isAdmin = false;
@@ -471,8 +471,12 @@ function renderFranquiaChips(franquias) {
 }
 
 function renderTipoChips(tipos) {
+  const normalized = [...new Set(
+    tipos.map(t => stripColor(stripEbook(t)).trim()).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
   const container = document.getElementById('chips-tipo');
-  container.innerHTML = tipos.map(t => {
+  container.innerHTML = normalized.map(t => {
     const isActive = state.selectedTipos.has(t);
     return `<button class="filter-chip ${isActive ? 'active' : ''}" data-value="${escHtml(t)}">${escHtml(t)}</button>`;
   }).join('');
@@ -523,9 +527,14 @@ export async function applyFilters() {
   let products = await filterProducts({
     text:      state.filterEstampa,
     franquias: [...state.selectedFranquias],
-    produtos:  [...state.selectedTipos],
     maxPrice:  state.filterMaxPrice,
   });
+
+  if (state.selectedTipos.size > 0) {
+    products = products.filter(p =>
+      state.selectedTipos.has(stripColor(stripEbook(p.produto || '')).trim())
+    );
+  }
 
   if (state.selectedCategorias.size > 0) {
     products = products.filter(p =>
@@ -593,7 +602,7 @@ function renderProducts(products) {
   // Agrupa por tipo de produto
   const groups = {};
   withImage.forEach(p => {
-    const key = stripEbook(p.produto || '') || 'Outros';
+    const key = stripColor(stripEbook(p.produto || '')).trim() || 'Outros';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
