@@ -7,6 +7,7 @@ export function stripEbook(str) {
 const PRICE_TABLE = [
   // Garrafas
   { key: 'Garrafa Térmica Magsafe',   price: '172.67' },
+  { key: 'Garrafa Térmica Flip Pro',  price: '132.67' },
   { key: 'Garrafa Térmica Pro',       price: '132.67' },
   { key: 'Garrafa Térmica Fresh 950', price: '106.60' },
   { key: 'Garrafa Térmica Fresh 650', price: '99.33'  },
@@ -29,6 +30,8 @@ const PRICE_TABLE = [
   { key: 'Mala Trip',                price: '332.59' },
   { key: 'Mala Joy',                 price: '159.33' },
   { key: 'Bolsa Joy Pro',            price: '159.33' },
+  { key: 'Bolsa Voyage',             price: '259.33' },
+  { key: 'Bolsa de Garrafa',         price: '94.43'  },
   // Mochilas
   { key: 'Mochila Executiva',        price: '179.33' },
   { key: 'Mochila Voyage',           price: '259.33' },
@@ -48,33 +51,37 @@ const PRICE_TABLE = [
 ];
 
 const PRICE_TABLE_LISOS = [
-  { key: 'Garrafa Térmica Urban',    price: '59.93'  },
-  { key: 'Garrafa Térmica Mini',     price: '73.27'  },
-  { key: 'Garrafa Térmica Fresh 650', price: '86.60' },
-  { key: 'Garrafa Térmica Fresh 950', price: '93.27' },
-  { key: 'Garrafa Térmica Fresh',    price: '86.60'  },
-  { key: 'Garrafa Térmica Pro',      price: '119.33' },
-  { key: 'Garrafa Térmica Magsafe',  price: '152.67' },
-  { key: 'Copo Térmico Life 1170',   price: '126.00' },
-  { key: 'Copo Térmico Life 880',    price: '112.67' },
-  { key: 'Copo Térmico Life',        price: '126.00' },
-  { key: 'Copo Térmico Vibe',        price: '79.33'  },
-  { key: 'Copo Térmico',            price: '79.33'  },
-  { key: 'Tote Puffer',             price: '179.33' },
-  { key: 'Tote Daily',              price: '132.67' },
-  { key: 'Tote Pop',                price: '119.33' },
-  { key: 'Tote Mini',               price: '126.00' },
-  { key: 'Mala Trip',               price: '317.78' },
-  { key: 'Mala Joy',                price: '146.00' },
-  { key: 'Bolsa Joy Pro',           price: '146.00' },
-  { key: 'Mochila Pop',             price: '119.33' },
-  { key: 'Mochila Executiva',       price: '159.33' },
-  { key: 'Mochila Voyage',          price: '246.00' },
-  { key: 'Bolsa Moove',             price: '119.33' },
-  { key: 'Necessaire Makeup',       price: '72.67'  },
-  { key: 'Necessaire Trip',         price: '46.60'  },
-  { key: 'Necessaire Puffer',       price: '39.93'  },
-  { key: 'Lancheira Fruit',         price: '133.27' },
+  { key: 'Garrafa Térmica Magsafe',   price: '152.67' },
+  { key: 'Garrafa Térmica Flip Pro',  price: '119.33' },
+  { key: 'Garrafa Térmica Pro',       price: '119.33' },
+  { key: 'Garrafa Térmica Fresh 950', price: '93.27'  },
+  { key: 'Garrafa Térmica Fresh 650', price: '86.60'  },
+  { key: 'Garrafa Térmica Fresh',     price: '86.60'  },
+  { key: 'Garrafa Térmica Mini',      price: '73.27'  },
+  { key: 'Garrafa Térmica Urban',     price: '59.93'  },
+  { key: 'Copo Térmico Life 1170',    price: '126.00' },
+  { key: 'Copo Térmico Life 880',     price: '112.67' },
+  { key: 'Copo Térmico Life',         price: '126.00' },
+  { key: 'Copo Térmico Vibe',         price: '79.33'  },
+  { key: 'Copo Térmico',             price: '79.33'  },
+  { key: 'Tote Puffer',              price: '179.33' },
+  { key: 'Tote Daily',               price: '132.67' },
+  { key: 'Tote Pop',                 price: '119.33' },
+  { key: 'Tote Mini',                price: '126.00' },
+  { key: 'Mala Trip',                price: '317.78' },
+  { key: 'Mala Joy',                 price: '146.00' },
+  { key: 'Bolsa Joy Pro',            price: '146.00' },
+  { key: 'Bolsa Voyage',             price: '246.00' },
+  { key: 'Bolsa de Garrafa',         price: '84.43'  },
+  { key: 'Mochila Pop',              price: '119.33' },
+  { key: 'Mochila Executiva',        price: '159.33' },
+  { key: 'Mochila Voyage',           price: '246.00' },
+  { key: 'Bolsa Moove',              price: '119.33' },
+  { key: 'Bolsa Térmica Fruit',      price: '153.33' },
+  { key: 'Necessaire Makeup',        price: '72.67'  },
+  { key: 'Necessaire Trip',          price: '46.60'  },
+  { key: 'Necessaire Puffer',        price: '39.93'  },
+  { key: 'Lancheira Fruit',          price: '133.27' },
 ];
 
 export function getPriceByProduct(produto, fallback, fullName, franquia) {
@@ -143,11 +150,12 @@ export function stripColor(str) {
   return (str || '').trim().replace(new RegExp(_colorPattern, 'i'), '').trim();
 }
 
-// Produtos conhecidos derivados da PRICE_TABLE (sem 'Capinha' — é o fallback)
+// Produtos conhecidos (sem 'Capinha' — é o fallback)
 // Inclui versões curtas usadas nas planilhas da linha Lisa (sem "Térmica")
 const KNOWN_PRODUTO_KEYS = [
   // Garrafas — versões completas
   'Garrafa Térmica Magsafe',
+  'Garrafa Térmica Flip Pro',
   'Garrafa Térmica Pro',
   'Garrafa Térmica Fresh 950',
   'Garrafa Térmica Fresh 650',
@@ -156,6 +164,7 @@ const KNOWN_PRODUTO_KEYS = [
   'Garrafa Térmica Urban',
   // Garrafas — versões curtas (planilha Lisa)
   'Garrafa Magsafe',
+  'Garrafa Flip Pro',
   'Garrafa Fresh 950',
   'Garrafa Fresh 650',
   'Garrafa Fresh',
@@ -175,53 +184,66 @@ const KNOWN_PRODUTO_KEYS = [
   'Copo Vibe',
   // Totes
   'Tote Puffer',
+  'Tote Puff',
   'Tote Daily',
   'Tote Mini',
   'Tote Pop',
   // Malas
   'Mala Trip',
   'Mala Joy',
+  // Bolsas
   'Bolsa Joy Pro',
+  'Bolsa Joy',
+  'Bolsa Voyage',
+  'Bolsa de Garrafa',
+  'Bolsa Térmica Fruit Pro',
+  'Bolsa Térmica Fruit',
+  'Bolsa Térmica Fun',
+  'Bolsa Moove',
   // Mochilas
   'Mochila Executiva',
   'Mochila Voyage',
   'Mochila Fun',
   'Mochila Pop',
-  // Bolsas
-  'Bolsa Térmica Fruit',
-  'Bolsa Térmica Fun',
-  'Bolsa Moove',
   // Necessaires
-  'Necessaire Puffer',
+  'Necessaire Makup Double',
+  'Necessaire Makeup Double',
   'Necessaire Makeup',
+  'Necessaire Puffer',
   'Necessaire Trip',
   // Outros
   'Lancheira Fruit',
 ];
 
-// Mapeia nomes curtos (planilha Lisa) para o nome canônico completo,
+// Mapeia aliases (nomes curtos ou com erros de digitação) para o nome canônico,
 // garantindo que getPriceByProduct encontre o preço correto na PRICE_TABLE.
-const PRODUTO_CANONICAL = {
-  'Garrafa Magsafe':   'Garrafa Térmica Magsafe',
-  'Garrafa Fresh 950': 'Garrafa Térmica Fresh 950',
-  'Garrafa Fresh 650': 'Garrafa Térmica Fresh 650',
-  'Garrafa Fresh':     'Garrafa Térmica Fresh',
-  'Garrafa Mini':      'Garrafa Térmica Mini',
-  'Garrafa Urban':     'Garrafa Térmica Urban',
-  'Copo Life 1170':    'Copo Térmico Life 1170',
-  'Copo Life 880':     'Copo Térmico Life 880',
-  'Copo Life':         'Copo Térmico Life',
-  'Copo Vibe':         'Copo Térmico Vibe',
+const PRODUTO_ALIASES = {
+  'Garrafa Flip Pro':        'Garrafa Térmica Flip Pro',
+  'Garrafa Magsafe':         'Garrafa Térmica Magsafe',
+  'Garrafa Fresh 950':       'Garrafa Térmica Fresh 950',
+  'Garrafa Fresh 650':       'Garrafa Térmica Fresh 650',
+  'Garrafa Fresh':           'Garrafa Térmica Fresh',
+  'Garrafa Mini':            'Garrafa Térmica Mini',
+  'Garrafa Urban':           'Garrafa Térmica Urban',
+  'Copo Life 1170':          'Copo Térmico Life 1170',
+  'Copo Life 880':           'Copo Térmico Life 880',
+  'Copo Life':               'Copo Térmico Life',
+  'Copo Vibe':               'Copo Térmico Vibe',
+  'Tote Puff':               'Tote Puffer',
+  'Bolsa Joy':               'Bolsa Joy Pro',
+  'Bolsa Térmica Fruit Pro': 'Bolsa Térmica Fruit',
+  'Necessaire Makup Double': 'Necessaire Makeup',
+  'Necessaire Makeup Double':'Necessaire Makeup',
 };
 
 // Retorna o nome canônico do produto ou null (mais longo primeiro = mais específico)
-// Remove sufixos como "470ml", "1170ml" antes de comparar.
+// Remove sufixos de unidade como "470ml", "1170ml", "1kg" antes de comparar.
 function matchProduto(str) {
-  const normalized = (str || '').trim().replace(/\s+\d+ml$/i, '').trim();
+  const normalized = (str || '').trim().replace(/\s+\d+(ml|kg|l)$/i, '').trim();
   const lower = normalized.toLowerCase();
   const sorted = [...KNOWN_PRODUTO_KEYS].sort((a, b) => b.length - a.length);
   for (const key of sorted) {
-    if (lower.startsWith(key.toLowerCase())) return PRODUTO_CANONICAL[key] || key;
+    if (lower.startsWith(key.toLowerCase())) return PRODUTO_ALIASES[key] || key;
   }
   return null;
 }
