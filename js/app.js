@@ -575,6 +575,13 @@ function renderProducts(products) {
       </div>`).join('');
 }
 
+// ── CATÁLOGO ANÔNIMO ──
+export function toggleAnonimo(checkbox) {
+  const hidden = checkbox.checked;
+  document.getElementById('catalog-header-block').style.display = hidden ? 'none' : '';
+  document.getElementById('cta-bar-footer').style.display       = hidden ? 'none' : '';
+}
+
 // ── GENERATE PDF ──
 export async function generatePDF() {
   const catalog = document.getElementById('catalog');
@@ -676,3 +683,4 @@ window.clearFilters          = clearFilters;
 window.applyFiltersDebounced = applyFiltersDebounced;
 window.gerarCatalogo         = gerarCatalogo;
 window.generatePDF           = generatePDF;
+window.toggleAnonimo         = toggleAnonimo;

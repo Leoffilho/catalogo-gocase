@@ -80,6 +80,12 @@
           <input type="color" style="display:none" value="#fafafa" oninput="changeBg(this)" />
         </label>
 
+        <!-- Catálogo Anônimo -->
+        <label class="btn btn-outline" style="gap:8px;cursor:pointer" title="Oculta nome e contatos do revendedor no catálogo">
+          <input type="checkbox" id="toggle-anonimo" onchange="toggleAnonimo(this)" style="cursor:pointer">
+          Anônimo
+        </label>
+
         <!-- Exportar PDF -->
         <button class="btn btn-pdf" id="btn-pdf" onclick="generatePDF()">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -243,7 +249,7 @@
   <div class="catalog-wrapper" id="catalog" style="display:none">
 
     <!-- Header -->
-    <div class="catalog-header">
+    <div class="catalog-header" id="catalog-header-block">
       <div class="catalog-header-left">
         <img
           src="https://gocase.com.br/cdn/shop/files/gocase-empresas-logo.png"
@@ -312,7 +318,7 @@
       </div>
 
       <!-- CTA Bar -->
-      <div class="cta-bar">
+      <div class="cta-bar" id="cta-bar-footer">
         <div>
           <div class="cta-bar-label">Fale com o revendedor</div>
           <div class="cta-bar-name" id="cta-seller-name"></div>
