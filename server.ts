@@ -15,7 +15,7 @@ function err(msg: string, status = 400) { return json({ error: msg }, status); }
 async function initDB(env: any) {
   await env.DB.exec(`CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, produto TEXT, colecao TEXT,
-    estampa TEXT, price TEXT, image TEXT, franquia TEXT, linha TEXT,
+    estampa TEXT, price TEXT, image TEXT, franquia TEXT, linha TEXT DEFAULT '',
     fonte TEXT, importadoEm TEXT, dedup_key TEXT UNIQUE
   )`, []);
   // Migração: adiciona coluna linha se não existir (bancos criados antes desta versão)
