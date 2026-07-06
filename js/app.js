@@ -2,6 +2,28 @@ import { SELLERS } from './sellers.js';
 import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
 import { parseRow, learnCollections, stripEbook, getPriceByProduct, getFranquia } from './parser.js';
 
+// ── ADMIN CHECK ──
+let _isAdmin = false;
+async function checkAdmin() {
+  try {
+    const me = await fetch('/api/me').then(r => r.json());
+    _isAdmin = me.isAdmin || false;
+  } catch { _isAdmin = false; }
+
+  const tabDB = document.querySelector('[data-tab="db"]');
+  if (tabDB) tabDB.style.display = _isAdmin ? '' : 'none';
+
+  if (_isAdmin) {
+    const nav = document.querySelector('.navbar-sub');
+    if (nav) {
+      const badge = document.createElement('span');
+      badge.textContent = ' 👑 Admin';
+      badge.style.cssText = 'color:#e11d48;font-weight:700;font-size:11px';
+      nav.appendChild(badge);
+    }
+  }
+}
+
 // ── STATE ──
 const state = {
   seller: SELLERS.find(s => s.email === 'leonardo.filho@gocase.com') || SELLERS[0],
@@ -187,6 +209,7 @@ function askFranquia(filename) {
 }
 
 export async function importToDB(input) {
+  if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
   const files = Array.from(input.files);
   if (!files.length) return;
 
@@ -227,20 +250,6 @@ export async function importToDB(input) {
   await renderDBTable();
   await initGeneratorScreen();
   input.value = '';
-}
-
-// ── DB MIGRATION ──
-async function migrateDB() {
-  await updateAllProducts(p => {
-    const needsFranquia    = p.franquia === undefined;
-    const needsEbookStrip  = p.produto && p.produto !== stripEbook(p.produto);
-    if (!needsFranquia && !needsEbookStrip) return null;
-    return {
-      ...p,
-      franquia: needsFranquia ? getFranquia(p.name) : p.franquia,
-      produto:  stripEbook(p.produto || 'Capinha'),
-    };
-  });
 }
 
 // ── DB SCREEN ──
@@ -340,6 +349,7 @@ export function dbPageNext() {
 }
 
 export async function clearDBConfirm() {
+  if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
   const count = await countProducts();
   if (count === 0) { showToast('Banco já está vazio'); return; }
   if (!confirm(`Remover todos os ${count.toLocaleString('pt-BR')} produtos do banco? Esta ação não pode ser desfeita.`)) return;
@@ -680,7 +690,7 @@ buildSellerOptions();
 renderSellerInfo();
 
 (async () => {
-  await migrateDB();
+  await checkAdmin();
   switchTab('generator');
 })();
 

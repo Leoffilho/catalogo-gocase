@@ -1,140 +1,56 @@
-// IndexedDB wrapper for persistent product storage
-const DB_NAME = 'gocase_catalog';
-const DB_VERSION = 1;
-const STORE = 'products';
+const API = '';
 
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const store = db.createObjectStore(STORE, { keyPath: 'id' });
-        store.createIndex('colecao',   'colecao',   { unique: false });
-        store.createIndex('produto',   'produto',   { unique: false });
-        store.createIndex('dedup_key', 'dedup_key', { unique: true });
-      }
-    };
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-  });
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function getAllProducts() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction(STORE, 'readonly');
-    const req   = tx.objectStore(STORE).getAll();
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-  });
+  const { rows } = await apiFetch('/api/products?all=1');
+  return rows;
 }
 
 export async function countProducts() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx  = db.transaction(STORE, 'readonly');
-    const req = tx.objectStore(STORE).count();
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-  });
+  const { total } = await apiFetch('/api/count');
+  return total;
 }
 
-// Returns { added, skipped }
 export async function addProducts(newProducts) {
-  const db = await openDB();
-  let added = 0;
-  let skipped = 0;
-
-  for (const p of newProducts) {
-    await new Promise(resolve => {
-      const tx  = db.transaction(STORE, 'readwrite');
-      const req = tx.objectStore(STORE).add(p);
-      req.onsuccess = () => { added++;   resolve(); };
-      req.onerror   = () => { skipped++; resolve(); }; // ConstraintError = duplicate
-    });
-  }
-
-  return { added, skipped };
+  return apiFetch('/api/products', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ products: newProducts }),
+  });
 }
 
 export async function clearDB() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx  = db.transaction(STORE, 'readwrite');
-    const req = tx.objectStore(STORE).clear();
-    req.onsuccess = () => resolve();
-    req.onerror   = e => reject(e.target.error);
-  });
+  return apiFetch('/api/products', { method: 'DELETE' });
 }
 
-// Applies a transform to every product; if transform returns non-null, saves the result
-export async function updateAllProducts(transform) {
-  const db  = await openDB();
-  const all = await getAllProducts();
-  for (const p of all) {
-    const updated = transform(p);
-    if (updated !== null && updated !== undefined) {
-      await new Promise(resolve => {
-        const tx  = db.transaction(STORE, 'readwrite');
-        const req = tx.objectStore(STORE).put(updated);
-        req.onsuccess = () => resolve();
-        req.onerror   = () => resolve(); // don't fail migration on individual errors
-      });
-    }
-  }
+export async function updateAllProducts() {
+  // Não necessário com backend centralizado
+  return;
 }
 
 export async function getDistinctValues(field) {
-  const all = await getAllProducts();
-  const seen = new Set();
-  all.forEach(p => { if (p[field]) seen.add(p[field]); });
-  return [...seen].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const { values } = await apiFetch('/api/distinct?field=' + field);
+  return values;
 }
 
-// Paged query with optional filters
-export async function queryProducts({
-  text = '', produtos = [], colecoes = [], franquias = [],
-  maxPrice = Infinity, page = 1, pageSize = 50,
-} = {}) {
-  const all = await getAllProducts();
-  const lower = text.toLowerCase();
-
-  const filtered = all.filter(p => {
-    if (lower && ![p.name, p.produto, p.colecao, p.estampa, p.franquia].some(f => (f || '').toLowerCase().includes(lower))) return false;
-    if (produtos.length  && !produtos.includes(p.produto))   return false;
-    if (colecoes.length  && !colecoes.includes(p.colecao))   return false;
-    if (franquias.length && !franquias.includes(p.franquia)) return false;
-    const pr = parseFloat(p.price);
-    if (isFinite(maxPrice) && isFinite(pr) && pr > maxPrice) return false;
-    return true;
-  });
-
-  filtered.sort((a, b) => {
-    const byProduto = (a.produto || '').localeCompare(b.produto || '', 'pt-BR');
-    if (byProduto !== 0) return byProduto;
-    return (a.estampa || '').localeCompare(b.estampa || '', 'pt-BR');
-  });
-
-  const total = filtered.length;
-  const start = (page - 1) * pageSize;
-  const rows  = filtered.slice(start, start + pageSize);
-  return { rows, total, page, pageSize, pages: Math.ceil(total / pageSize) };
+export async function queryProducts({ text='', produtos=[], colecoes=[], franquias=[], maxPrice=Infinity, page=1, pageSize=50 } = {}) {
+  const params = new URLSearchParams({ page, pageSize });
+  if (text)           params.set('text', text);
+  if (franquias[0])   params.set('franquia', franquias[0]);
+  if (produtos[0])    params.set('produto', produtos[0]);
+  return apiFetch('/api/products?' + params);
 }
 
-// For catalog generator: all matching products (no pagination)
-export async function filterProducts({
-  text = '', produtos = [], colecoes = [], franquias = [], maxPrice = Infinity,
-} = {}) {
-  const all = await getAllProducts();
-  const lower = text.toLowerCase();
-  return all.filter(p => {
-    if (lower && ![p.name, p.produto, p.colecao, p.estampa, p.franquia].some(f => (f || '').toLowerCase().includes(lower))) return false;
-    if (produtos.length  && !produtos.includes(p.produto))   return false;
-    if (colecoes.length  && !colecoes.includes(p.colecao))   return false;
-    if (franquias.length && !franquias.includes(p.franquia)) return false;
-    const pr = parseFloat(p.price);
-    if (isFinite(maxPrice) && isFinite(pr) && pr > maxPrice) return false;
-    return true;
-  });
+export async function filterProducts({ text='', produtos=[], colecoes=[], franquias=[], maxPrice=Infinity } = {}) {
+  const params = new URLSearchParams({ all: '1' });
+  if (text)         params.set('text', text);
+  if (franquias[0]) params.set('franquia', franquias[0]);
+  if (produtos[0])  params.set('produto', produtos[0]);
+  const { rows } = await apiFetch('/api/products?' + params);
+  return rows;
 }
