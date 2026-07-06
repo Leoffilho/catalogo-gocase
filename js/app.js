@@ -72,13 +72,14 @@ const state = {
 // ── CATEGORIA MAP ──
 const CATEGORIA_MAP = {
   'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico'],
-  'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'mala', 'bag'],
+  'Malas':    ['mala trip', 'mala joy', 'mala'],
+  'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'bag', 'puffer'],
   'Capinhas': ['capinha', 'slim air', 'infinite air'],
 };
 
-// Têxteis tem prioridade: bolsa/tote/mochila com "térmica" no nome = só Têxteis
 function getCategorias(produto) {
   const lower = (produto || '').toLowerCase();
+  if (CATEGORIA_MAP['Malas'].some(k => lower.includes(k)))     return ['Malas'];
   if (CATEGORIA_MAP['Têxteis'].some(k => lower.includes(k)))   return ['Têxteis'];
   if (CATEGORIA_MAP['Térmicos'].some(k => lower.includes(k)))  return ['Térmicos'];
   if (CATEGORIA_MAP['Capinhas'].some(k => lower.includes(k)))  return ['Capinhas'];
@@ -342,7 +343,7 @@ export async function renderDBTable() {
     </div></td></tr>`;
   } else {
     tbody.innerHTML = rows.map(p => {
-      const displayPrice = getPriceByProduct(p.produto, p.price, null);
+      const displayPrice = getPriceByProduct(p.produto, p.price, null, p.franquia);
       const hasValidImg  = p.image && p.image.startsWith('http');
       return `
       <tr>
@@ -473,6 +474,7 @@ function renderCategoriaChips() {
   const container = document.getElementById('chips-categoria');
   const categorias = [
     { nome: 'Térmicos', cor: '#0277bd' },
+    { nome: 'Malas',    cor: '#e65100' },
     { nome: 'Têxteis',  cor: '#558b2f' },
     { nome: 'Capinhas', cor: '#e11d48' },
   ];
@@ -595,7 +597,7 @@ export function gerarCatalogo() {
 }
 
 function renderProductCard(p) {
-  const price = getPriceByProduct(p.produto, p.price, p.name);
+  const price = getPriceByProduct(p.produto, p.price, p.name, p.franquia);
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
   const displayProduto = escHtml(stripEbook(p.produto || ''));
   return `

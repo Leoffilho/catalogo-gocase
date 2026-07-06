@@ -5,38 +5,85 @@ export function stripEbook(str) {
 
 // ── FIXED PRICE TABLE (more-specific keys first to avoid partial shadowing) ──
 const PRICE_TABLE = [
-  { key: 'Garrafa Térmica Magsafe',  price: '172.67' },
-  { key: 'Garrafa Térmica Pro',      price: '132.67' },
-  { key: 'Garrafa Térmica Fresh',    price: '99.33'  },
-  { key: 'Garrafa Térmica Mini',     price: '86.60'  },
-  { key: 'Garrafa Térmica Urban',    price: '72.67'  },
-  { key: 'Copo Térmico Life',        price: '126.00' },
-  { key: 'Copo Térmico Cerveja',     price: '92.67'  },
-  { key: 'Copo Térmico Vibe',        price: '92.67'  },
+  // Garrafas
+  { key: 'Garrafa Térmica Magsafe',   price: '172.67' },
+  { key: 'Garrafa Térmica Pro',       price: '132.67' },
+  { key: 'Garrafa Térmica Fresh 950', price: '106.60' },
+  { key: 'Garrafa Térmica Fresh 650', price: '99.33'  },
+  { key: 'Garrafa Térmica Fresh',     price: '99.33'  },
+  { key: 'Garrafa Térmica Mini',      price: '86.60'  },
+  { key: 'Garrafa Térmica Urban',     price: '72.67'  },
+  // Copos
+  { key: 'Copo Térmico Life 1170',    price: '139.33' },
+  { key: 'Copo Térmico Life 880',     price: '126.00' },
+  { key: 'Copo Térmico Life',         price: '139.33' },
+  { key: 'Copo Térmico Cerveja',      price: '92.67'  },
+  { key: 'Copo Térmico Vibe',         price: '92.67'  },
+  { key: 'Copo Térmico',             price: '92.67'  },
+  // Totes
+  { key: 'Tote Puffer',              price: '179.33' },
   { key: 'Tote Daily',               price: '146.00' },
   { key: 'Tote Mini',                price: '146.00' },
   { key: 'Tote Pop',                 price: '132.67' },
+  // Malas
   { key: 'Mala Trip',                price: '332.59' },
-  { key: 'Bolsa Joy Pro',            price: '159.33' },
   { key: 'Mala Joy',                 price: '159.33' },
-  { key: 'Mochila Pop',              price: '132.67' },
+  { key: 'Bolsa Joy Pro',            price: '159.33' },
+  // Mochilas
   { key: 'Mochila Executiva',        price: '179.33' },
   { key: 'Mochila Voyage',           price: '259.33' },
   { key: 'Mochila Fun',              price: '219.33' },
-  { key: 'Bolsa Moove',              price: '139.33' },
+  { key: 'Mochila Pop',              price: '132.67' },
+  // Bolsas
   { key: 'Bolsa Térmica Fruit',      price: '153.33' },
-  { key: 'Lancheira Fruit',          price: '153.33' },
   { key: 'Bolsa Térmica Fun',        price: '120.00' },
+  { key: 'Bolsa Moove',              price: '139.33' },
+  // Necessaires
+  { key: 'Necessaire Puffer',        price: '39.93'  },
+  { key: 'Necessaire Makeup',        price: '72.67'  },
   { key: 'Necessaire Trip',          price: '52.67'  },
+  // Outros
+  { key: 'Lancheira Fruit',          price: '153.33' },
   { key: 'Capinha',                  price: '31.07'  },
 ];
 
-export function getPriceByProduct(produto, fallback, fullName) {
-  const clean = stripEbook(produto || '').toLowerCase();
-  for (const entry of PRICE_TABLE) {
+const PRICE_TABLE_LISOS = [
+  { key: 'Garrafa Térmica Urban',    price: '59.93'  },
+  { key: 'Garrafa Térmica Mini',     price: '73.27'  },
+  { key: 'Garrafa Térmica Fresh 650', price: '86.60' },
+  { key: 'Garrafa Térmica Fresh 950', price: '93.27' },
+  { key: 'Garrafa Térmica Fresh',    price: '86.60'  },
+  { key: 'Garrafa Térmica Pro',      price: '119.33' },
+  { key: 'Garrafa Térmica Magsafe',  price: '152.67' },
+  { key: 'Copo Térmico Life 1170',   price: '126.00' },
+  { key: 'Copo Térmico Life 880',    price: '112.67' },
+  { key: 'Copo Térmico Life',        price: '126.00' },
+  { key: 'Copo Térmico Vibe',        price: '79.33'  },
+  { key: 'Copo Térmico',            price: '79.33'  },
+  { key: 'Tote Puffer',             price: '179.33' },
+  { key: 'Tote Daily',              price: '132.67' },
+  { key: 'Tote Pop',                price: '119.33' },
+  { key: 'Tote Mini',               price: '126.00' },
+  { key: 'Mala Trip',               price: '317.78' },
+  { key: 'Mala Joy',                price: '146.00' },
+  { key: 'Bolsa Joy Pro',           price: '146.00' },
+  { key: 'Mochila Pop',             price: '119.33' },
+  { key: 'Mochila Executiva',       price: '159.33' },
+  { key: 'Mochila Voyage',          price: '246.00' },
+  { key: 'Bolsa Moove',             price: '119.33' },
+  { key: 'Necessaire Makeup',       price: '72.67'  },
+  { key: 'Necessaire Trip',         price: '46.60'  },
+  { key: 'Necessaire Puffer',       price: '39.93'  },
+  { key: 'Lancheira Fruit',         price: '133.27' },
+];
+
+export function getPriceByProduct(produto, fallback, fullName, franquia) {
+  const clean  = stripEbook(produto || '').toLowerCase();
+  const tabela = (franquia === 'Lisos') ? PRICE_TABLE_LISOS : PRICE_TABLE;
+  for (const entry of tabela) {
     if (clean.includes(entry.key.toLowerCase())) return entry.price;
   }
-  if (fullName) console.warn('[PREÇO NÃO MAPEADO]:', fullName);
+  if (fullName) console.warn('[PREÇO NÃO MAPEADO]:', fullName, '| franquia:', franquia);
   return fallback || '';
 }
 
@@ -100,28 +147,35 @@ export function stripColor(str) {
 const KNOWN_PRODUTO_KEYS = [
   'Garrafa Térmica Magsafe',
   'Garrafa Térmica Pro',
+  'Garrafa Térmica Fresh 950',
+  'Garrafa Térmica Fresh 650',
   'Garrafa Térmica Fresh',
   'Garrafa Térmica Mini',
   'Garrafa Térmica Urban',
+  'Copo Térmico Life 1170',
+  'Copo Térmico Life 880',
   'Copo Térmico Life',
   'Copo Térmico Cerveja',
   'Copo Térmico Vibe',
   'Copo Térmico',
+  'Tote Puffer',
   'Tote Daily',
   'Tote Mini',
   'Tote Pop',
   'Mala Trip',
-  'Bolsa Joy Pro',
   'Mala Joy',
-  'Mochila Pop',
+  'Bolsa Joy Pro',
   'Mochila Executiva',
   'Mochila Voyage',
   'Mochila Fun',
-  'Bolsa Moove',
+  'Mochila Pop',
   'Bolsa Térmica Fruit',
-  'Lancheira Fruit',
   'Bolsa Térmica Fun',
+  'Bolsa Moove',
+  'Necessaire Puffer',
+  'Necessaire Makeup',
   'Necessaire Trip',
+  'Lancheira Fruit',
 ];
 
 // Retorna a chave do produto reconhecido ou null (mais longo primeiro = mais específico)
