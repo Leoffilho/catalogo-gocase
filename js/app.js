@@ -578,6 +578,11 @@ function renderProducts(products) {
           ${prods.map(p => renderProductCard(p)).join('')}
         </div>
       </div>`).join('');
+
+  const togglePrecos = document.getElementById('toggle-precos');
+  if (togglePrecos && !togglePrecos.checked) {
+    document.querySelectorAll('.product-price').forEach(el => { el.style.display = 'none'; });
+  }
 }
 
 // ── CATÁLOGO ANÔNIMO ──
@@ -585,6 +590,14 @@ export function toggleAnonimo(checkbox) {
   const hidden = checkbox.checked;
   document.getElementById('catalog-header-block').style.display = hidden ? 'none' : '';
   document.getElementById('cta-bar-footer').style.display       = hidden ? 'none' : '';
+}
+
+// ── TOGGLE PREÇOS ──
+export function togglePrecos(checkbox) {
+  const mostrar = checkbox.checked;
+  document.querySelectorAll('.product-price').forEach(el => {
+    el.style.display = mostrar ? '' : 'none';
+  });
 }
 
 // ── GENERATE PDF ──
@@ -689,3 +702,4 @@ window.applyFiltersDebounced = applyFiltersDebounced;
 window.gerarCatalogo         = gerarCatalogo;
 window.generatePDF           = generatePDF;
 window.toggleAnonimo         = toggleAnonimo;
+window.togglePrecos          = togglePrecos;
