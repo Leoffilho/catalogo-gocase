@@ -23,6 +23,7 @@ const state = {
 const CATEGORIA_MAP = {
   'Térmicos': ['garrafa', 'copo', 'taça', 'térmica', 'térmico'],
   'Têxteis':  ['tote', 'mochila', 'bolsa', 'necessaire', 'lancheira', 'mala', 'bag'],
+  'Capinhas': ['capinha', 'slim air', 'infinite air'],
 };
 
 // Têxteis tem prioridade: bolsa/tote/mochila com "térmica" no nome = só Têxteis
@@ -30,6 +31,7 @@ function getCategorias(produto) {
   const lower = (produto || '').toLowerCase();
   if (CATEGORIA_MAP['Têxteis'].some(k => lower.includes(k)))   return ['Têxteis'];
   if (CATEGORIA_MAP['Térmicos'].some(k => lower.includes(k)))  return ['Térmicos'];
+  if (CATEGORIA_MAP['Capinhas'].some(k => lower.includes(k)))  return ['Capinhas'];
   return [];
 }
 
@@ -394,10 +396,13 @@ async function renderGeneratorFilters() {
 
 function renderCategoriaChips() {
   const container = document.getElementById('chips-categoria');
-  const categorias = ['Térmicos', 'Têxteis'];
-  container.innerHTML = categorias.map(c => {
+  const categorias = [
+    { nome: 'Térmicos', cor: '#0277bd' },
+    { nome: 'Têxteis',  cor: '#558b2f' },
+    { nome: 'Capinhas', cor: '#e11d48' },
+  ];
+  container.innerHTML = categorias.map(({ nome: c, cor: color }) => {
     const isActive = state.selectedCategorias.has(c);
-    const color = c === 'Térmicos' ? '#0277bd' : '#558b2f';
     return `<button class="filter-chip chip-franquia ${isActive ? 'active' : ''}"
       data-value="${c}" style="--fc:${color}">${c}</button>`;
   }).join('');
