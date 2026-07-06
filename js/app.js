@@ -1,5 +1,5 @@
 import { SELLERS } from './sellers.js';
-import { getAllProducts, addProducts, clearDB, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
+import { getAllProducts, addProducts, clearDB, clearDBByFranquia, countProducts, queryProducts, filterProducts, getDistinctValues, updateAllProducts } from './db.js';
 import { parseRow, learnCollections, stripEbook, stripColor, getPriceByProduct, getFranquia } from './parser.js';
 
 // ── ADMIN CHECK ──
@@ -376,6 +376,43 @@ export function dbPageNext() {
   state.dbPage++; renderDBTable();
 }
 
+export async function clearDBByFranquiaConfirm() {
+  if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
+
+  const { values: franquias } = await fetch('/api/distinct?field=franquia').then(r => r.json());
+  if (!franquias.length) { showToast('Banco já está vazio'); return; }
+
+  const franquia = await new Promise(resolve => {
+    const modal = document.getElementById('modal-clear-franquia');
+    const sel   = document.getElementById('select-clear-franquia');
+    sel.innerHTML = franquias.map(f => `<option value="${escHtml(f)}">${escHtml(f)}</option>`).join('');
+    modal.classList.remove('hidden');
+
+    const btnConfirm = document.getElementById('btn-clear-franquia-confirm');
+    const btnCancel  = document.getElementById('btn-clear-franquia-cancel');
+
+    function finish(val) {
+      modal.classList.add('hidden');
+      btnConfirm.removeEventListener('click', onConfirm);
+      btnCancel.removeEventListener('click', onCancel);
+      resolve(val);
+    }
+    function onConfirm() { finish(sel.value); }
+    function onCancel()  { finish(null); }
+
+    btnConfirm.addEventListener('click', onConfirm);
+    btnCancel.addEventListener('click', onCancel);
+  });
+
+  if (!franquia) return;
+  if (!confirm(`Remover todos os produtos da franquia "${franquia}"? Esta ação não pode ser desfeita.`)) return;
+
+  const { deleted } = await clearDBByFranquia(franquia);
+  showToast(`✓ ${deleted} produtos da franquia "${franquia}" removidos`);
+  await initDBScreen();
+  await initGeneratorScreen();
+}
+
 export async function clearDBConfirm() {
   if (!_isAdmin) { showToast('⚠ Sem permissão de admin'); return; }
   const count = await countProducts();
@@ -750,7 +787,8 @@ window.importToDB            = importToDB;
 window.renderDBTable         = renderDBTable;
 window.dbPagePrev            = dbPagePrev;
 window.dbPageNext            = dbPageNext;
-window.clearDBConfirm        = clearDBConfirm;
+window.clearDBConfirm             = clearDBConfirm;
+window.clearDBByFranquiaConfirm   = clearDBByFranquiaConfirm;
 window.onPriceRange          = onPriceRange;
 window.clearFilters          = clearFilters;
 window.applyFiltersDebounced = applyFiltersDebounced;

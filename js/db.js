@@ -28,6 +28,14 @@ export async function clearDB() {
   return apiFetch('/api/products', { method: 'DELETE' });
 }
 
+export async function clearDBByFranquia(franquia) {
+  return apiFetch('/api/products/franquia', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ franquia }),
+  });
+}
+
 export async function updateAllProducts() {
   // Não necessário com backend centralizado
   return;

@@ -126,6 +126,13 @@
         <div class="db-stats-label">produtos no banco de dados</div>
       </div>
       <div class="db-stats-actions">
+        <button class="btn btn-outline" onclick="clearDBByFranquiaConfirm()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          Limpar por Franquia
+        </button>
         <button class="btn btn-outline" onclick="clearDBConfirm()">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
@@ -396,6 +403,24 @@
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="document.getElementById('modal-edit-seller').classList.add('hidden')">Cancelar</button>
       <button class="btn btn-red" onclick="saveEditSeller()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Limpar por Franquia -->
+<div class="modal-overlay hidden" id="modal-clear-franquia">
+  <div class="modal-box">
+    <div class="modal-title">Limpar por Franquia</div>
+    <div class="modal-desc">Selecione a franquia que deseja remover do banco de dados.</div>
+    <div class="modal-form">
+      <div class="form-field">
+        <label for="select-clear-franquia">Franquia</label>
+        <select id="select-clear-franquia" style="padding:8px 12px;border:1px solid #d4d4d4;border-radius:6px;font-size:14px;outline:none;width:100%"></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="btn-clear-franquia-cancel">Cancelar</button>
+      <button class="btn btn-red" id="btn-clear-franquia-confirm">Remover</button>
     </div>
   </div>
 </div>

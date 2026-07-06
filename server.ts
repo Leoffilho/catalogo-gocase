@@ -113,6 +113,14 @@ export default {
       return json({ ok: true });
     }
 
+    if (path === '/api/products/franquia' && method === 'DELETE') {
+      if (!isAdminToken(request, env)) return err('Não autorizado', 403);
+      const body = await request.json() as { franquia: string };
+      if (!body.franquia) return err('Franquia não informada');
+      const result = await env.DB.exec('DELETE FROM products WHERE franquia = ?', [body.franquia]);
+      return json({ deleted: result.rowsWritten });
+    }
+
     return new Response('Not found', { status: 404 });
   },
 };
