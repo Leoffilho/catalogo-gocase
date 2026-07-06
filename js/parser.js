@@ -96,47 +96,46 @@ export function stripColor(str) {
   return (str || '').trim().replace(new RegExp(_colorPattern, 'i'), '').trim();
 }
 
-// Known Gocase collection/franchise names — used to infer "Capinha" when name has only 2 parts
-const KNOWN_COLLECTIONS = new Set([
-  'Harry Potter', 'Friends', 'Warner', 'Disney', 'Marvel', 'Star Wars',
-  'Stranger Things', 'Game of Thrones', 'Batman', 'Superman', 'Mulher Maravilha',
-  'Liga da Justiça', 'Looney Tunes', 'Tom e Jerry', 'Scooby Doo',
-  'Pernalonga', 'Space Jam', 'Esquadrão Suicida', 'The Flash',
-  'Aquaman', 'Power Rangers', 'Mortal Kombat', 'Pokémon', 'Pikachu',
-  'One Piece', 'Naruto', 'Dragon Ball', 'Attack on Titan',
-  'Studio Ghibli', 'Totoro', 'Sailor Moon', 'Evangelion',
-  'Breaking Bad', 'The Office', 'Grey\'s Anatomy', 'How I Met Your Mother',
-  'Big Bang Theory', 'Sex and the City', 'Euphoria', 'Squid Game',
-  'Wednesday', 'Bridgerton', 'Peaky Blinders',
-  'Taylor Swift', 'BTS', 'Beyoncé', 'Lady Gaga', 'Ariana Grande',
-  'Billie Eilish', 'Olivia Rodrigo', 'Bad Bunny',
-  'Gocase', 'Pride', 'Lover', 'Vintage', 'Aesthetic', 'Botanical',
-  'Floral', 'Tie Dye', 'Tumblr', 'Astrology', 'Zodiac',
-  'Super Poderosas', 'Princesas', 'Toy Story', 'Frozen',
-  'Lilo e Stitch', 'Winnie the Pooh', 'Alice', 'Bambi',
-  'Bob Esponja', 'Patricinho', 'Sandy e Junior',
-]);
+// Produtos conhecidos derivados da PRICE_TABLE (sem 'Capinha' — é o fallback)
+const KNOWN_PRODUTO_KEYS = [
+  'Garrafa Térmica Magsafe',
+  'Garrafa Térmica Pro',
+  'Garrafa Térmica Fresh',
+  'Garrafa Térmica Mini',
+  'Garrafa Térmica Urban',
+  'Copo Térmico Life',
+  'Copo Térmico Cerveja',
+  'Copo Térmico Vibe',
+  'Copo Térmico',
+  'Tote Daily',
+  'Tote Mini',
+  'Tote Pop',
+  'Mala Trip',
+  'Bolsa Joy Pro',
+  'Mala Joy',
+  'Mochila Pop',
+  'Mochila Executiva',
+  'Mochila Voyage',
+  'Mochila Fun',
+  'Bolsa Moove',
+  'Bolsa Térmica Fruit',
+  'Lancheira Fruit',
+  'Bolsa Térmica Fun',
+  'Necessaire Trip',
+];
 
-// Known physical product types — prevents treating product names as collection names
-const KNOWN_PRODUTOS = new Set([
-  'Garrafa', 'Garrafa Magsafe', 'Garrafa Fresh 950', 'Garrafa Fresh 650',
-  'Garrafa Fresh', 'Garrafa Pro', 'Garrafa Mini', 'Garrafa Urban',
-  'Garrafa Térmica', 'Garrafa Térmica Fresh', 'Garrafa Térmica Urban',
-  'Garrafa Térmica Mini', 'Garrafa Térmica Pro',
-  'Copo', 'Copo Life 1170', 'Copo Life 880', 'Copo Vibe', 'Copo Life', 'Copo Térmico',
-  'Tote', 'Tote Daily', 'Tote Mini', 'Tote Pop',
-  'Mala', 'Mala Trip', 'Mala Joy',
-  'Mochila', 'Mochila Pop', 'Mochila Executiva', 'Mochila Voyage', 'Mochila Fun',
-  'Bolsa', 'Bolsa Moove',
-  'Necessaire', 'Necessaire Trip',
-  'Lancheira', 'Lancheira Fruit',
-  'Capinha', 'Slim Air', 'Infinite Air',
-]);
-
-// Expand known collections from imported data (call after each import)
-export function learnCollections(names) {
-  names.forEach(n => { if (n) KNOWN_COLLECTIONS.add(n); });
+// Retorna a chave do produto reconhecido ou null (mais longo primeiro = mais específico)
+function matchProduto(str) {
+  const lower = (str || '').toLowerCase();
+  const sorted = [...KNOWN_PRODUTO_KEYS].sort((a, b) => b.length - a.length);
+  for (const key of sorted) {
+    if (lower.startsWith(key.toLowerCase())) return key;
+  }
+  return null;
 }
+
+// Stub mantido para não quebrar imports em app.js
+export function learnCollections() {}
 
 // Capitalizes first letter of each word
 function titleCase(str) {
@@ -145,31 +144,30 @@ function titleCase(str) {
 
 // Parses "Produto - Coleção - Estampa" pattern
 export function parseName(fullName) {
-  if (!fullName) return { produto: '', colecao: '', estampa: '' };
+  if (!fullName) return { produto: 'Capinha', colecao: '', estampa: '' };
 
   const parts = fullName.split(' - ').map(p => p.trim()).filter(Boolean);
 
   if (parts.length >= 3) {
+    const produtoMatch = matchProduto(parts[0]);
     return {
-      produto:  parts[0],
-      colecao:  parts[1],
-      estampa:  parts.slice(2).join(' - '),
+      produto: produtoMatch || 'Capinha',
+      colecao: produtoMatch ? parts[1] : parts[0],
+      estampa: produtoMatch ? parts.slice(2).join(' - ') : parts.slice(1).join(' - '),
     };
   }
 
   if (parts.length === 2) {
-    // Known franchise/collection → must be a Capinha
-    if (KNOWN_COLLECTIONS.has(parts[0])) {
-      return { produto: 'Capinha', colecao: parts[0], estampa: parts[1] };
+    const produtoMatch = matchProduto(parts[0]);
+    if (produtoMatch) {
+      return { produto: produtoMatch, colecao: parts[1], estampa: '' };
     }
-    // Known physical product → part[1] is the collection/franchise
-    if (KNOWN_PRODUTOS.has(parts[0]) || [...KNOWN_PRODUTOS].some(p => parts[0].startsWith(p + ' '))) {
-      return { produto: parts[0], colecao: parts[1], estampa: '' };
-    }
-    return { produto: parts[0], colecao: parts[1], estampa: '' };
+    // Primeira parte não é produto conhecido → é coleção, produto é Capinha
+    return { produto: 'Capinha', colecao: parts[0], estampa: parts[1] };
   }
 
-  return { produto: fullName, colecao: '', estampa: '' };
+  // Nome sem hífen → estampa de capinha
+  return { produto: 'Capinha', colecao: '', estampa: fullName };
 }
 
 // Extracts collection from scraper URL
