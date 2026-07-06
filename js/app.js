@@ -264,6 +264,9 @@ export async function importToDB(input) {
             p.franquia = manualFranquia;
             p.linha    = manualFranquia;
           }
+          if (p.linha === 'Lisos') {
+            p.price = getPriceByProduct(p.produto, p.price, p.name, p.franquia, p.linha);
+          }
           parsed.push(p);
         }
       });
@@ -346,7 +349,9 @@ export async function renderDBTable() {
     </div></td></tr>`;
   } else {
     tbody.innerHTML = rows.map(p => {
-      const displayPrice = getPriceByProduct(p.produto, p.price, null, p.franquia, p.linha);
+      const displayPrice = p.linha === 'Lisos'
+        ? p.price
+        : getPriceByProduct(p.produto, p.price, null, p.franquia);
       const hasValidImg  = p.image && p.image.startsWith('http');
       return `
       <tr>
@@ -600,7 +605,9 @@ export function gerarCatalogo() {
 }
 
 function renderProductCard(p) {
-  const price = getPriceByProduct(p.produto, p.price, p.name, p.franquia, p.linha);
+  const price = p.linha === 'Lisos'
+    ? p.price
+    : getPriceByProduct(p.produto, p.price, p.name, p.franquia);
   const displayName    = escHtml(stripEbook(p.estampa || p.name));
   const displayProduto = escHtml(stripEbook(p.produto || ''));
   return `
