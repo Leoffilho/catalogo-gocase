@@ -85,8 +85,11 @@ const PRICE_TABLE_LISOS = [
 ];
 
 export function getPriceByProduct(produto, fallback, fullName, franquia) {
-  const clean  = stripEbook(produto || '').toLowerCase();
+  // Resolve alias para nome canônico (cobre registros antigos sem Térmica no produto)
+  const canonical = PRODUTO_ALIASES[produto] || produto;
+  const clean  = stripEbook(canonical || '').toLowerCase();
   const tabela = (franquia === 'Lisos') ? PRICE_TABLE_LISOS : PRICE_TABLE;
+  if (franquia === 'Lisos') console.log('[LISOS] produto:', produto, '| canonical:', canonical, '| clean:', clean);
   for (const entry of tabela) {
     if (clean.includes(entry.key.toLowerCase())) return entry.price;
   }
