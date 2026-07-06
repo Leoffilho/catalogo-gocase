@@ -144,7 +144,9 @@ export function stripColor(str) {
 }
 
 // Produtos conhecidos derivados da PRICE_TABLE (sem 'Capinha' — é o fallback)
+// Inclui versões curtas usadas nas planilhas da linha Lisa (sem "Térmica")
 const KNOWN_PRODUTO_KEYS = [
+  // Garrafas — versões completas
   'Garrafa Térmica Magsafe',
   'Garrafa Térmica Pro',
   'Garrafa Térmica Fresh 950',
@@ -152,38 +154,74 @@ const KNOWN_PRODUTO_KEYS = [
   'Garrafa Térmica Fresh',
   'Garrafa Térmica Mini',
   'Garrafa Térmica Urban',
+  // Garrafas — versões curtas (planilha Lisa)
+  'Garrafa Magsafe',
+  'Garrafa Fresh 950',
+  'Garrafa Fresh 650',
+  'Garrafa Fresh',
+  'Garrafa Mini',
+  'Garrafa Urban',
+  // Copos — versões completas
   'Copo Térmico Life 1170',
   'Copo Térmico Life 880',
   'Copo Térmico Life',
   'Copo Térmico Cerveja',
   'Copo Térmico Vibe',
   'Copo Térmico',
+  // Copos — versões curtas (planilha Lisa)
+  'Copo Life 1170',
+  'Copo Life 880',
+  'Copo Life',
+  'Copo Vibe',
+  // Totes
   'Tote Puffer',
   'Tote Daily',
   'Tote Mini',
   'Tote Pop',
+  // Malas
   'Mala Trip',
   'Mala Joy',
   'Bolsa Joy Pro',
+  // Mochilas
   'Mochila Executiva',
   'Mochila Voyage',
   'Mochila Fun',
   'Mochila Pop',
+  // Bolsas
   'Bolsa Térmica Fruit',
   'Bolsa Térmica Fun',
   'Bolsa Moove',
+  // Necessaires
   'Necessaire Puffer',
   'Necessaire Makeup',
   'Necessaire Trip',
+  // Outros
   'Lancheira Fruit',
 ];
 
-// Retorna a chave do produto reconhecido ou null (mais longo primeiro = mais específico)
+// Mapeia nomes curtos (planilha Lisa) para o nome canônico completo,
+// garantindo que getPriceByProduct encontre o preço correto na PRICE_TABLE.
+const PRODUTO_CANONICAL = {
+  'Garrafa Magsafe':   'Garrafa Térmica Magsafe',
+  'Garrafa Fresh 950': 'Garrafa Térmica Fresh 950',
+  'Garrafa Fresh 650': 'Garrafa Térmica Fresh 650',
+  'Garrafa Fresh':     'Garrafa Térmica Fresh',
+  'Garrafa Mini':      'Garrafa Térmica Mini',
+  'Garrafa Urban':     'Garrafa Térmica Urban',
+  'Copo Life 1170':    'Copo Térmico Life 1170',
+  'Copo Life 880':     'Copo Térmico Life 880',
+  'Copo Life':         'Copo Térmico Life',
+  'Copo Vibe':         'Copo Térmico Vibe',
+};
+
+// Retorna o nome canônico do produto ou null (mais longo primeiro = mais específico)
+// Remove sufixos como "470ml", "1170ml" antes de comparar.
 function matchProduto(str) {
-  const lower = (str || '').toLowerCase();
+  const normalized = (str || '').trim().replace(/\s+\d+ml$/i, '').trim();
+  const lower = normalized.toLowerCase();
   const sorted = [...KNOWN_PRODUTO_KEYS].sort((a, b) => b.length - a.length);
   for (const key of sorted) {
-    if (lower.startsWith(key.toLowerCase())) return key;
+    if (lower.startsWith(key.toLowerCase())) return PRODUTO_CANONICAL[key] || key;
   }
   return null;
 }
@@ -273,12 +311,19 @@ export function parseRow(row, fonte) {
   const name   = col('name', 'nome', 'product', 'description', 'nome do produto', 'produto', 'descrição');
   if (!name) return null;
 
-  const parsed = parseName(name);
+  // Formato Lisa: nome sem hífen e que bate diretamente com produto conhecido
+  // Ex: "Garrafa Fresh 650ml", "Tote Daily", "Copo Life 1170ml"
+  const hasHifen     = name.includes(' - ');
+  const produtoMatch = matchProduto(name);
 
-  // Complement colecao from URL if not found in name
-  if (!parsed.colecao && format === 'A') {
-    const urlCol = col('web_scraper_start_url');
-    parsed.colecao = parseURL(urlCol);
+  let parsed;
+  if (!hasHifen && produtoMatch) {
+    parsed = { produto: produtoMatch, colecao: 'Geral', estampa: '' };
+  } else {
+    parsed = parseName(name);
+    if (!parsed.colecao && format === 'A') {
+      parsed.colecao = parseURL(col('web_scraper_start_url'));
+    }
   }
 
   const rawPrice = col('price', 'price5', 'preço', 'preco', 'valor', 'pvp', 'preco de venda');
