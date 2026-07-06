@@ -182,8 +182,8 @@ select.styled-select {
 .cta-btn-wa svg { width: 16px; height: 16px; }
 
 /* ── PRODUCTS SECTION ── */
-.products-section { padding: 24px; background: var(--white); }
-.products-team-group { margin-bottom: 32px; }
+.products-section { padding: 24px; background-color: inherit; }
+.products-team-group { margin-bottom: 32px; background-color: inherit; }
 .team-heading {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 16px; padding-bottom: 8px;
@@ -200,6 +200,7 @@ select.styled-select {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
+  background-color: inherit;
 }
 .product-card {
   background: var(--white); border-radius: 10px;

@@ -657,6 +657,13 @@ export async function generatePDF() {
     const canvas = await html2canvas(catalog, {
       scale: 2, useCORS: true, allowTaint: true,
       backgroundColor: bgColor, logging: false,
+      onclone: (clonedDoc) => {
+        clonedDoc.body.style.backgroundColor = bgColor;
+        const wrapper = clonedDoc.getElementById('catalog');
+        if (wrapper) wrapper.style.backgroundColor = bgColor;
+        const section = clonedDoc.getElementById('products-section');
+        if (section) section.style.backgroundColor = bgColor;
+      },
     });
 
     const imgW  = 210;
