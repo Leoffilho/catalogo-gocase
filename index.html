@@ -360,18 +360,26 @@
 <div class="toast" id="toast"></div>
 
 <!-- MODAL: Franquia da Planilha -->
+<!-- MODAL: Franquia da Planilha -->
 <div class="modal-overlay hidden" id="modal-franquia">
   <div class="modal-box">
-    <div class="modal-title">Franquia / Segmento da Planilha</div>
+    <div class="modal-title">Configurar Importação</div>
     <div class="modal-desc">
       <strong id="modal-franquia-filename"></strong><br/>
-      A qual franquia ou segmento pertencem os produtos importados? Deixe em branco para detecção automática.
+      Defina a franquia e a tabela de preços para os produtos desta planilha.
     </div>
     <div class="modal-form">
       <div class="form-field">
         <label for="modal-franquia-input">Franquia / Segmento</label>
         <input type="text" id="modal-franquia-input"
-          placeholder='ex: "Harry Potter", "Friends", "Flamengo", "Religiosos"...' />
+          placeholder='ex: "Harry Potter", "Friends", "Lisos"...' />
+      </div>
+      <div class="form-field">
+        <label for="modal-tabela-select">Tabela de Preços</label>
+        <select id="modal-tabela-select" style="padding:8px 12px;border:1px solid #d4d4d4;border-radius:6px;font-size:14px;outline:none;width:100%">
+          <option value="padrao">Padrão (produtos estampados)</option>
+          <option value="lisos">Lisa (produtos lisos)</option>
+        </select>
       </div>
     </div>
     <div class="modal-actions">

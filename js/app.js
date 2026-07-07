@@ -214,18 +214,20 @@ function askFranquia(filename) {
   return new Promise(resolve => {
     document.getElementById('modal-franquia-filename').textContent = filename;
     document.getElementById('modal-franquia-input').value = '';
-    const modal    = document.getElementById('modal-franquia');
+    document.getElementById('modal-tabela-select').value = 'padrao';
+    const modal     = document.getElementById('modal-franquia');
     const btnImport = document.getElementById('btn-franquia-import');
     const btnSkip   = document.getElementById('btn-franquia-skip');
     modal.classList.remove('hidden');
     setTimeout(() => document.getElementById('modal-franquia-input').focus(), 50);
 
-    function finish(val) {
+    function finish(franquia) {
+      const isLisa = document.getElementById('modal-tabela-select').value === 'lisos';
       modal.classList.add('hidden');
       btnImport.removeEventListener('click', onImport);
       btnSkip.removeEventListener('click', onSkip);
       document.removeEventListener('keydown', onKey);
-      resolve(val || null);
+      resolve(franquia ? { franquia, isLisa } : null);
     }
     function onImport() { finish(document.getElementById('modal-franquia-input').value.trim()); }
     function onSkip()   { finish(null); }
@@ -245,7 +247,9 @@ export async function importToDB(input) {
   const label = files.length > 1
     ? `${files.length} planilhas: ${files.map(f => f.name).join(', ')}`
     : files[0].name;
-  const manualFranquia = await askFranquia(label);
+  const modalResult = await askFranquia(label);
+  const manualFranquia = modalResult?.franquia || null;
+  const isLisa         = modalResult?.isLisa   || false;
 
   let totalAdded = 0, totalSkipped = 0;
 
@@ -261,7 +265,6 @@ export async function importToDB(input) {
         const p = parseRow(row, file.name);
         if (p) {
           if (manualFranquia) p.franquia = manualFranquia;
-          const isLisa = manualFranquia === 'Lisos';
           p.linha = isLisa ? 'Lisos' : 'Padrao';
           p.price = isLisa
             ? getPriceByProductLisa(p.produto, p.price)
