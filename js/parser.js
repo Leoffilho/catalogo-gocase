@@ -247,7 +247,8 @@ const PRODUTO_ALIASES = {
 // Retorna o nome canônico do produto ou null (mais longo primeiro = mais específico)
 // Remove sufixos de unidade como "470ml", "1170ml", "1kg" antes de comparar.
 function matchProduto(str) {
-  const normalized = (str || '').trim().replace(/\s+\d+(ml|kg|l)$/i, '').trim();
+  // Preserva o número, remove apenas a unidade: "650ml" → "650", "1170ml" → "1170"
+  const normalized = (str || '').trim().replace(/(\d+)\s*(ml|l|kg|g)\s*$/i, '$1').trim();
   const lower = normalized.toLowerCase();
   const sorted = [...KNOWN_PRODUTO_KEYS].sort((a, b) => b.length - a.length);
   for (const key of sorted) {
