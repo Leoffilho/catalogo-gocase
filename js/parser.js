@@ -3,9 +3,7 @@ export function stripEbook(str) {
   return (str || '').replace(/\s*\+\s*ebook\b/gi, '').replace(/\s{2,}/g, ' ').trim();
 }
 
-// ── FIXED PRICE TABLE (more-specific keys first to avoid partial shadowing) ──
 const PRICE_TABLE = [
-  // Garrafas
   { key: 'Garrafa Térmica Magsafe',   price: '172.67' },
   { key: 'Garrafa Térmica Flip Pro',  price: '132.67' },
   { key: 'Garrafa Térmica Pro',       price: '132.67' },
@@ -14,38 +12,31 @@ const PRICE_TABLE = [
   { key: 'Garrafa Térmica Fresh',     price: '99.33'  },
   { key: 'Garrafa Térmica Mini',      price: '86.60'  },
   { key: 'Garrafa Térmica Urban',     price: '72.67'  },
-  // Copos
   { key: 'Copo Térmico Life 1170',    price: '139.33' },
   { key: 'Copo Térmico Life 880',     price: '126.00' },
   { key: 'Copo Térmico Life',         price: '139.33' },
   { key: 'Copo Térmico Cerveja',      price: '92.67'  },
   { key: 'Copo Térmico Vibe',         price: '92.67'  },
   { key: 'Copo Térmico',             price: '92.67'  },
-  // Totes
   { key: 'Tote Puffer',              price: '179.33' },
   { key: 'Tote Daily',               price: '146.00' },
   { key: 'Tote Mini',                price: '146.00' },
   { key: 'Tote Pop',                 price: '132.67' },
-  // Malas
   { key: 'Mala Trip',                price: '332.59' },
   { key: 'Mala Joy',                 price: '159.33' },
   { key: 'Bolsa Joy Pro',            price: '159.33' },
   { key: 'Bolsa Voyage',             price: '259.33' },
   { key: 'Bolsa de Garrafa',         price: '94.43'  },
-  // Mochilas
   { key: 'Mochila Executiva',        price: '179.33' },
   { key: 'Mochila Voyage',           price: '259.33' },
   { key: 'Mochila Fun',              price: '219.33' },
   { key: 'Mochila Pop',              price: '132.67' },
-  // Bolsas
   { key: 'Bolsa Térmica Fruit',      price: '153.33' },
   { key: 'Bolsa Térmica Fun',        price: '120.00' },
   { key: 'Bolsa Moove',              price: '139.33' },
-  // Necessaires
   { key: 'Necessaire Puffer',        price: '39.93'  },
   { key: 'Necessaire Makeup',        price: '72.67'  },
   { key: 'Necessaire Trip',          price: '52.67'  },
-  // Outros
   { key: 'Lancheira Fruit',          price: '153.33' },
   { key: 'Capinha',                  price: '31.07'  },
 ];
@@ -158,19 +149,15 @@ export function stripColor(str) {
   return (str || '').trim().replace(new RegExp(_colorPattern, 'i'), '').trim();
 }
 
-// Produtos conhecidos (sem 'Capinha' — é o fallback)
-// Inclui versões curtas usadas nas planilhas da linha Lisa (sem "Térmica")
+// Produtos conhecidos — do mais específico para o mais genérico (sem sort em runtime)
 const KNOWN_PRODUTO_KEYS = [
-  // Garrafas — versões completas
   'Garrafa Térmica Magsafe',
   'Garrafa Térmica Flip Pro',
-  'Garrafa Térmica Pro',
   'Garrafa Térmica Fresh 950',
   'Garrafa Térmica Fresh 650',
   'Garrafa Térmica Fresh',
   'Garrafa Térmica Mini',
   'Garrafa Térmica Urban',
-  // Garrafas — versões curtas (planilha Lisa)
   'Garrafa Magsafe',
   'Garrafa Flip Pro',
   'Garrafa Fresh 950',
@@ -178,28 +165,23 @@ const KNOWN_PRODUTO_KEYS = [
   'Garrafa Fresh',
   'Garrafa Mini',
   'Garrafa Urban',
-  // Copos — versões completas
   'Copo Térmico Life 1170',
   'Copo Térmico Life 880',
   'Copo Térmico Life',
   'Copo Térmico Cerveja',
   'Copo Térmico Vibe',
   'Copo Térmico',
-  // Copos — versões curtas (planilha Lisa)
   'Copo Life 1170',
   'Copo Life 880',
   'Copo Life',
   'Copo Vibe',
-  // Totes
   'Tote Puffer',
   'Tote Puff',
   'Tote Daily',
   'Tote Mini',
   'Tote Pop',
-  // Malas
   'Mala Trip',
   'Mala Joy',
-  // Bolsas
   'Bolsa Joy Pro',
   'Bolsa Joy',
   'Bolsa Voyage',
@@ -208,18 +190,15 @@ const KNOWN_PRODUTO_KEYS = [
   'Bolsa Térmica Fruit',
   'Bolsa Térmica Fun',
   'Bolsa Moove',
-  // Mochilas
   'Mochila Executiva',
   'Mochila Voyage',
   'Mochila Fun',
   'Mochila Pop',
-  // Necessaires
   'Necessaire Makup Double',
   'Necessaire Makeup Double',
   'Necessaire Makeup',
   'Necessaire Puffer',
   'Necessaire Trip',
-  // Outros
   'Lancheira Fruit',
 ];
 
@@ -244,14 +223,15 @@ const PRODUTO_ALIASES = {
   'Necessaire Makeup Double':'Necessaire Makeup',
 };
 
-// Retorna o nome canônico do produto ou null (mais longo primeiro = mais específico)
-// Remove sufixos de unidade como "470ml", "1170ml", "1kg" antes de comparar.
+// Retorna o nome canônico do produto ou null.
+// Remove apenas a unidade de medida preservando o número: "650ml" → "650".
+// Usa a ordem de KNOWN_PRODUTO_KEYS diretamente (mais específico primeiro).
 function matchProduto(str) {
-  // Preserva o número, remove apenas a unidade: "650ml" → "650", "1170ml" → "1170"
-  const normalized = (str || '').trim().replace(/(\d+)\s*(ml|l|kg|g)\s*$/i, '$1').trim();
+  const normalized = (str || '').trim()
+    .replace(/(\d+)\s*(ml|l|kg|g)\s*$/i, '$1')
+    .trim();
   const lower = normalized.toLowerCase();
-  const sorted = [...KNOWN_PRODUTO_KEYS].sort((a, b) => b.length - a.length);
-  for (const key of sorted) {
+  for (const key of KNOWN_PRODUTO_KEYS) {
     if (lower.startsWith(key.toLowerCase())) return PRODUTO_ALIASES[key] || key;
   }
   return null;
